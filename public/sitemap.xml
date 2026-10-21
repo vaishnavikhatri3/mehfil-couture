@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Replace https://www.example.com with the live domain before deploying. -->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://www.example.com/</loc></url>
+  <url><loc>https://www.example.com/journal/sangeet-lehenga-styling</loc></url>
+  <url><loc>https://www.example.com/journal/wedding-guest-inspiration</loc></url>
+  <url><loc>https://www.example.com/journal/colours-for-every-celebration</loc></url>
+  <url><loc>https://www.example.com/journal/the-art-of-the-dupatta</loc></url>
+  <url><loc>https://www.example.com/journal/jewellery-pairings</loc></url>
+  <url><loc>https://www.example.com/journal/restyle-your-occasionwear</loc></url>
+  <url><loc>https://www.example.com/privacy</loc></url>
+</urlset>

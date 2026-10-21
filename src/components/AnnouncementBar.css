@@ -1,0 +1,46 @@
+.announce {
+  position: relative;
+  z-index: 60;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  background: var(--maroon-deep);
+  color: var(--gold-tint);
+}
+.announce__track {
+  display: flex;
+  width: max-content;
+  animation: marquee 60s linear infinite;
+}
+.announce__group {
+  display: flex;
+  flex: none;
+}
+.announce__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 28px;
+  padding-right: 28px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.announce__dot {
+  color: var(--gold-soft);
+}
+.announce:hover .announce__track {
+  animation-play-state: paused;
+}
+@keyframes marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .announce__track {
+    animation: none;
+  }
+}

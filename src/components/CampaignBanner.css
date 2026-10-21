@@ -1,0 +1,55 @@
+.camp {
+  position: relative;
+  min-height: min(92svh, 860px);
+  display: flex;
+  align-items: flex-end;
+  color: var(--ink-on-dark);
+  overflow: hidden;
+  background: var(--ink);
+}
+.camp__media {
+  position: absolute;
+  inset: 0;
+}
+.camp__img {
+  object-position: 50% 30%;
+}
+.camp__veil {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(to top, rgba(20, 10, 8, 0.86) 0%, rgba(20, 10, 8, 0.35) 45%, rgba(20, 10, 8, 0.1) 100%),
+    linear-gradient(to right, rgba(20, 10, 8, 0.55), transparent 60%);
+}
+.camp__inner {
+  position: relative;
+  display: grid;
+  gap: 20px;
+  padding-block: clamp(64px, 9vw, 120px);
+}
+.camp__kicker {
+  color: var(--gold-soft);
+}
+.camp__title {
+  margin: 0;
+  max-width: 9.5ch;
+  font-family: var(--display);
+  font-weight: 320;
+  font-variation-settings: "opsz" 144;
+  font-size: clamp(2.8rem, 5.6vw, 5.8rem);
+  line-height: 0.94;
+  letter-spacing: -0.035em;
+}
+.camp__body {
+  margin: 0;
+  max-width: 48ch;
+  font-size: 1.06rem;
+  line-height: 1.7;
+  color: rgba(246, 236, 220, 0.84);
+}
+.camp__offer {
+  color: var(--gold-tint);
+  border: 1px solid rgba(240, 226, 197, 0.4);
+  padding: 8px 12px;
+  justify-self: start;
+}

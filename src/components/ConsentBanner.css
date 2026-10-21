@@ -1,0 +1,26 @@
+.consent {
+  position: fixed;
+  left: calc(16px + env(safe-area-inset-left));
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  z-index: 90;
+  width: min(420px, calc(100vw - 104px));
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  box-shadow: 0 24px 60px -30px rgba(31, 22, 18, 0.5);
+  font-size: 14px;
+  animation: toast-in 420ms var(--ease-out) both;
+}
+.consent p {
+  margin: 0;
+}
+.consent__actions {
+  display: flex;
+  gap: 10px;
+}
+.consent .btn {
+  min-height: 44px;
+  padding: 0 18px;
+}

@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+# Replace example.com with the live domain (see VITE_SITE_URL in .env.example)
+Sitemap: https://www.example.com/sitemap.xml

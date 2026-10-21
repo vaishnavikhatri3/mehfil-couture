@@ -1,0 +1,63 @@
+.fab {
+  position: fixed;
+  right: calc(16px + env(safe-area-inset-right));
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  z-index: 40;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  height: 56px;
+  padding: 0 20px 0 16px;
+  border-radius: 999px;
+  color: var(--paper);
+  background: var(--maroon);
+  box-shadow: 0 18px 40px -16px rgba(74, 16, 16, 0.65);
+  opacity: 0;
+  transform: translateY(16px) scale(0.95);
+  pointer-events: none;
+  transition:
+    opacity 300ms ease,
+    transform 420ms var(--ease-out),
+    background-color 240ms ease;
+}
+.fab--wa {
+  background: #1f7a4d;
+}
+.fab.is-shown {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+.fab:active {
+  transform: scale(0.96);
+}
+.fab__label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+@media (hover: hover) and (pointer: fine) {
+  .fab:hover {
+    background: var(--maroon-deep);
+  }
+  .fab--wa:hover {
+    background: #17603c;
+  }
+}
+@media (max-width: 560px) {
+  .fab {
+    width: 56px;
+    padding: 0;
+    justify-content: center;
+  }
+  .fab__label {
+    display: none;
+  }
+}
+/* Don't sit on top of the Style Studio's own sticky bar on phones */
+@media (max-width: 1000px) {
+  body:has(.studio__mini) .studio__mini {
+    margin-right: 68px;
+  }
+}

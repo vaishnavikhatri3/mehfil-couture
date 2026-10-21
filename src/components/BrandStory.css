@@ -1,0 +1,125 @@
+.story {
+  padding-block: var(--section-y);
+  background: var(--maroon-deep);
+  color: var(--ink-on-dark);
+  overflow: hidden;
+}
+
+.story__grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  column-gap: 24px;
+  row-gap: clamp(48px, 6vw, 88px);
+}
+
+.story__head {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 24px;
+}
+.story__label {
+  color: var(--gold-soft);
+}
+.story__title {
+  margin: 0;
+  max-width: 15ch;
+  font-family: var(--display);
+  font-weight: 320;
+  font-variation-settings: "opsz" 144;
+  font-size: clamp(2.8rem, 6.8vw, 7rem);
+  line-height: 0.95;
+  letter-spacing: -0.035em;
+}
+.story__title em {
+  display: block;
+  font-weight: 300;
+  color: var(--gold-soft);
+}
+
+.story__visuals {
+  grid-column: 1 / span 6;
+  position: relative;
+  min-height: 100%;
+}
+.story__img--a {
+  width: 82%;
+  aspect-ratio: 4 / 5.3;
+}
+.story__par {
+  position: absolute;
+  inset: -10% 0;
+}
+.story__img--b {
+  position: absolute;
+  right: 0;
+  bottom: 12%;
+  width: 40%;
+  aspect-ratio: 3 / 4;
+  border: 6px solid var(--maroon-deep);
+}
+.story__motif {
+  position: absolute;
+  left: -50px;
+  bottom: -40px;
+  color: var(--gold);
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.story__text {
+  grid-column: 8 / span 5;
+  display: grid;
+  align-content: center;
+  gap: clamp(40px, 5vw, 64px);
+}
+.story__statement {
+  margin: 0;
+  font-family: var(--display-2);
+  font-size: clamp(1.6rem, 2.6vw, 2.35rem);
+  line-height: 1.25;
+}
+.story__principles {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0;
+  border-top: 1px solid rgba(240, 226, 197, 0.18);
+}
+.story__principles li {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  column-gap: 12px;
+  padding: 20px 0;
+  border-bottom: 1px solid rgba(240, 226, 197, 0.18);
+}
+.story__no {
+  grid-row: span 2;
+  font-family: var(--display);
+  font-style: italic;
+  font-size: 1.3rem;
+  color: var(--gold-soft);
+}
+.story__principles h3 {
+  margin: 0;
+  font-family: var(--display-2);
+  font-weight: 500;
+  font-size: 1.55rem;
+  line-height: 1.2;
+}
+.story__principles p {
+  margin: 4px 0 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: rgba(246, 236, 220, 0.72);
+}
+
+@media (max-width: 900px) {
+  .story__visuals,
+  .story__text {
+    grid-column: 1 / -1;
+  }
+  .story__visuals {
+    margin-right: 6%;
+  }
+}

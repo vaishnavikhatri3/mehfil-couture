@@ -1,0 +1,282 @@
+.mm {
+  padding-block: var(--section-y);
+  background: var(--sage-tint);
+  background: color-mix(in srgb, var(--sage-tint) 55%, var(--paper));
+  border-block: 1px solid var(--line-soft);
+}
+
+.mm__head {
+  display: grid;
+  gap: 22px;
+  margin-bottom: clamp(40px, 5vw, 72px);
+}
+.mm__head .h2 {
+  font-size: clamp(2.8rem, 6vw, 5.6rem);
+}
+
+.mm__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+  gap: clamp(32px, 5vw, 88px);
+  align-items: start;
+}
+
+/* ───────── Canvas ───────── */
+
+.mm__canvas {
+  position: sticky;
+  top: calc(var(--header-h) + 20px);
+}
+.mm__paper {
+  position: relative;
+  aspect-ratio: 4 / 5.2;
+  background-color: var(--paper);
+  background-image:
+    linear-gradient(var(--line-soft) 1px, transparent 1px),
+    linear-gradient(90deg, var(--line-soft) 1px, transparent 1px);
+  background-size: 28px 28px;
+  border: 1px solid var(--line);
+  box-shadow: 0 50px 80px -60px rgba(31, 22, 18, 0.55);
+  overflow: hidden;
+}
+.sketch {
+  position: absolute;
+  left: 50%;
+  top: 4%;
+  height: 92%;
+  width: auto;
+  transform: translateX(-50%);
+}
+.sketch__fill {
+  transition: fill 520ms var(--ease-out);
+}
+.sketch__fade {
+  animation: sketch-in 600ms var(--ease-out) both;
+}
+.sketch__fade path,
+.sketch__fade {
+  transition:
+    fill 520ms var(--ease-out),
+    opacity 400ms ease;
+}
+@keyframes sketch-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.mm__annot {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.mm__a {
+  position: absolute;
+  display: grid;
+  gap: 2px;
+  max-width: 34%;
+  font-family: var(--display-2);
+  font-style: italic;
+  font-size: clamp(0.95rem, 1.2vw, 1.15rem);
+  line-height: 1.2;
+  color: var(--ink);
+}
+.mm__a .label {
+  font-style: normal;
+  font-size: 9.5px;
+  color: var(--gold);
+}
+.mm__a::before {
+  content: "";
+  position: absolute;
+  top: 6px;
+  width: 26px;
+  height: 1px;
+  background: var(--gold);
+}
+.mm__a--1 {
+  left: 5%;
+  top: 14%;
+}
+.mm__a--1::before {
+  right: -32px;
+}
+.mm__a--2 {
+  left: 5%;
+  top: 44%;
+}
+.mm__a--2::before {
+  right: -32px;
+}
+.mm__a--3 {
+  right: 5%;
+  top: 56%;
+  text-align: right;
+}
+.mm__a--3::before {
+  left: -32px;
+}
+.mm__a--4 {
+  right: 5%;
+  top: 21%;
+  text-align: right;
+}
+.mm__a--4::before {
+  left: -32px;
+}
+.mm__sig {
+  position: absolute;
+  left: 5%;
+  bottom: 3.5%;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+/* ───────── Controls ───────── */
+
+.mm__step {
+  padding-block: 20px 24px;
+}
+.mm__step legend {
+  font-size: clamp(1.35rem, 2vw, 1.75rem);
+  margin-bottom: 14px;
+}
+.mm__swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 14px;
+}
+.mm__swatches .swatch {
+  width: 40px;
+  height: 40px;
+}
+.mm__swatches .swatch__label {
+  font-size: 11px;
+  max-width: 64px;
+  text-align: center;
+  line-height: 1.25;
+}
+.swatch--sheer {
+  background:
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.35) 0 2px, transparent 2px 5px),
+    var(--sw);
+}
+.swatch--none {
+  background:
+    linear-gradient(135deg, transparent calc(50% - 0.6px), var(--ink-soft) calc(50% - 0.6px), var(--ink-soft) calc(50% + 0.6px), transparent calc(50% + 0.6px)),
+    var(--paper);
+}
+
+.mm__summary {
+  display: grid;
+  gap: 14px;
+  padding: clamp(20px, 2.4vw, 30px);
+  margin-top: 8px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+}
+.mm__line {
+  margin: 0;
+  font-family: var(--display-2);
+  font-size: clamp(1.3rem, 1.8vw, 1.6rem);
+  line-height: 1.3;
+}
+.mm__line em {
+  color: var(--maroon);
+}
+.mm__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+}
+.mm__tools {
+  display: flex;
+  gap: 4px;
+}
+.mm__tool {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 12px;
+  font-size: 13px;
+  font-weight: 500;
+  border: 1px solid transparent;
+  transition:
+    border-color 200ms ease,
+    transform 160ms var(--ease-out);
+}
+.mm__tool:active {
+  transform: scale(0.97);
+}
+@media (hover: hover) and (pointer: fine) {
+  .mm__tool:hover {
+    border-color: var(--line);
+  }
+}
+
+.mm__saved ul {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+.mm__saved li {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--line-soft);
+}
+.mm__saved-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  font-size: 14px;
+  text-align: left;
+}
+.mm__dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+.mm__remove {
+  width: 36px;
+  height: 36px;
+  font-size: 18px;
+  color: var(--ink-soft);
+}
+
+@media (max-width: 960px) {
+  .mm__grid {
+    grid-template-columns: 1fr;
+  }
+  /* Phone/tablet: a compact sketch stays in view while you choose */
+  .mm__canvas {
+    top: 10px;
+    z-index: 3;
+  }
+  .mm__paper {
+    aspect-ratio: auto;
+    height: min(46svh, 520px);
+  }
+  .mm__a {
+    font-size: 0.9rem;
+    max-width: 30%;
+  }
+  .mm__a::before {
+    display: none;
+  }
+}
+@media (max-width: 480px) {
+  .mm__annot,
+  .mm__sig {
+    display: none;
+  }
+}
