@@ -32,6 +32,12 @@ export default function Privacy() {
           Your Style Studio choices and any looks you save in the Atelier Sketchbook are kept in your browser's local storage so
           they're there when you come back. They never leave your device; clearing your browser data removes them.
         </p>
+        <h2>Try-on lens</h2>
+        <p>
+          If you add a photo to the try-on lens, it is processed entirely in your browser. It is never uploaded to us or to any
+          third party, never stored, and is cleared from memory when you close the lens. Images you choose to save or share are
+          created on your own device.
+        </p>
         <h2>Newsletter</h2>
         <p>
           {brand.endpoints.newsletter

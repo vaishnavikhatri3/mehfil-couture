@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ArrowRight, Bookmark, Copy, RotateCcw } from "lucide-react";
+import { ArrowRight, Bookmark, Copy, RotateCcw, ScanFace } from "lucide-react";
 import {
   blouseStyles,
   defaultLook,
@@ -12,6 +12,7 @@ import {
 import { copyText, openEnquiry } from "../lib/enquiry";
 import { toast } from "../lib/toast";
 import { track } from "../lib/analytics";
+import { openLens } from "../lib/lensBus";
 import { LehengaSketch } from "./LehengaSketch";
 import "./MixAndMatch.css";
 
@@ -226,6 +227,9 @@ export function MixAndMatch() {
                   Enquire about this look <ArrowRight />
                 </button>
                 <div className="mm__tools">
+                  <button type="button" className="mm__tool" onClick={() => openLens(look)}>
+                    <ScanFace size={16} /> Try it on
+                  </button>
                   <button type="button" className="mm__tool" onClick={save}>
                     <Bookmark size={16} /> Save
                   </button>

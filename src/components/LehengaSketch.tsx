@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import { useId, type CSSProperties, type Ref } from "react";
 import { dupattaColours, lehengaColours, type Look, type Swatch } from "../data/mixmatch";
 
 /**
@@ -31,13 +31,13 @@ const BLOUSE: Record<Look["blouse"], { body: string; extra?: string[] }> = {
   },
 };
 
-function Patterns({ look, lehenga }: { look: Look; lehenga: Swatch }) {
+function Patterns({ look, lehenga, p }: { look: Look; lehenga: Swatch; p: string }) {
   const e = look.embroidery;
   const thread = e === "zari" ? GOLD : e === "resham" ? lehenga.light : e === "mirror" ? GOLD : lehenga.shade;
   return (
     <defs>
       {/* All-over buttis on the skirt */}
-      <pattern id="lk-butti" width="34" height="38" patternUnits="userSpaceOnUse">
+      <pattern id={`${p}butti`} width="34" height="38" patternUnits="userSpaceOnUse">
         {e === "zari" && (
           <g fill={GOLD} opacity=".9">
             <path d="M17,8 C21,13 21,19 17,22 C13,19 13,13 17,8Z" />
@@ -61,7 +61,7 @@ function Patterns({ look, lehenga }: { look: Look; lehenga: Swatch }) {
       </pattern>
 
       {/* Dense hem border */}
-      <pattern id="lk-border" width="26" height="60" patternUnits="userSpaceOnUse">
+      <pattern id={`${p}border`} width="26" height="60" patternUnits="userSpaceOnUse">
         {e === "minimal" ? (
           <g stroke={GOLD_DEEP} strokeWidth="1.4">
             <path d="M0,14 H26 M0,20 H26" />
@@ -86,11 +86,11 @@ function Patterns({ look, lehenga }: { look: Look; lehenga: Swatch }) {
       </pattern>
 
       {/* Blouse embroidery */}
-      <pattern id="lk-blouse" width="14" height="14" patternUnits="userSpaceOnUse">
+      <pattern id={`${p}blouse`} width="14" height="14" patternUnits="userSpaceOnUse">
         {e !== "minimal" && <circle cx="7" cy="7" r={e === "mirror" ? 2.2 : 1.3} fill={e === "mirror" ? "#f7f3ea" : thread} stroke={e === "mirror" ? GOLD : "none"} strokeWidth=".6" />}
       </pattern>
 
-      <linearGradient id="lk-shade" x1="0" x2="1" y1="0" y2="0">
+      <linearGradient id={`${p}shade`} x1="0" x2="1" y1="0" y2="0">
         <stop offset="0" stopColor="#000" stopOpacity=".32" />
         <stop offset=".28" stopColor="#000" stopOpacity="0" />
         <stop offset=".62" stopColor="#fff" stopOpacity=".07" />
@@ -100,7 +100,16 @@ function Patterns({ look, lehenga }: { look: Look; lehenga: Swatch }) {
   );
 }
 
-export function LehengaSketch({ look }: { look: Look }) {
+type Props = {
+  look: Look;
+  /** Garment only (no dress form), cropped tight — used as the try-on lens overlay */
+  bare?: boolean;
+  svgRef?: Ref<SVGSVGElement>;
+  className?: string;
+};
+
+export function LehengaSketch({ look, bare = false, svgRef, className = "sketch" }: Props) {
+  const p = `lk${useId().replace(/[^a-zA-Z0-9]/g, "")}-`;
   const lehenga = lehengaColours.find((c) => c.key === look.lehenga) ?? lehengaColours[0];
   const dupatta = dupattaColours.find((c) => c.key === look.dupatta);
   const dup = dupatta && "base" in dupatta ? dupatta : null;
@@ -117,10 +126,18 @@ export function LehengaSketch({ look }: { look: Look }) {
   });
 
   return (
-    <svg className="sketch" viewBox="0 0 400 720" role="img" aria-label="Illustration of the selected lehenga look on a dress form">
-      <Patterns look={look} lehenga={lehenga} />
+    <svg
+      ref={svgRef}
+      className={className}
+      viewBox={bare ? "20 80 360 630" : "0 0 400 720"}
+      xmlns="http://www.w3.org/2000/svg"
+      role="img"
+      aria-label={bare ? "Lehenga illustration overlay" : "Illustration of the selected lehenga look on a dress form"}
+    >
+      <Patterns look={look} lehenga={lehenga} p={p} />
 
       {/* Dress form */}
+      {!bare && (
       <g className="sketch__form">
         <ellipse cx="200" cy="44" rx="20" ry="6" fill="#e6d8bf" stroke="#b9a582" strokeWidth=".8" />
         <rect x="186" y="44" width="28" height="56" rx="6" fill="#efe3cc" stroke="#b9a582" strokeWidth=".8" />
@@ -132,6 +149,7 @@ export function LehengaSketch({ look }: { look: Look }) {
         />
         <path d="M200,92 V262" stroke="#b9a582" strokeWidth=".6" strokeDasharray="3 4" opacity=".7" />
       </g>
+      )}
 
       {/* Dupatta — back fall */}
       {dup && (
@@ -144,17 +162,17 @@ export function LehengaSketch({ look }: { look: Look }) {
 
       {/* Skirt */}
       <path d={SKIRT} className="sketch__fill" style={fill(lehenga.base)} />
-      {look.embroidery !== "minimal" && <path d={SKIRT} fill="url(#lk-butti)" opacity=".85" />}
+      {look.embroidery !== "minimal" && <path d={SKIRT} fill={`url(#${p}butti)`} opacity=".85" />}
       <g fill="none" stroke={lehenga.shade} strokeWidth="1.1" opacity=".6">
         {kalis.map((d) => (
           <path key={d} d={d} />
         ))}
       </g>
-      <path d={SKIRT} fill="url(#lk-shade)" />
+      <path d={SKIRT} fill={`url(#${p}shade)`} />
       <path d={HEM_BAND} className="sketch__fill" style={fill(lehenga.shade)} />
-      <path d={HEM_BAND} fill="url(#lk-border)" />
+      <path d={HEM_BAND} fill={`url(#${p}border)`} />
       <path d={WAIST_BAND} className="sketch__fill" style={fill(lehenga.shade)} />
-      <path d={WAIST_BAND} fill="url(#lk-border)" opacity=".8" />
+      <path d={WAIST_BAND} fill={`url(#${p}border)`} opacity=".8" />
 
       {/* Blouse */}
       <g>
@@ -162,9 +180,9 @@ export function LehengaSketch({ look }: { look: Look }) {
         {blouse.extra?.map((d) => (
           <path key={d} d={d} className="sketch__fill" style={fill(lehenga.base)} />
         ))}
-        <path d={blouse.body} fill="url(#lk-blouse)" opacity=".9" />
+        <path d={blouse.body} fill={`url(#${p}blouse)`} opacity=".9" />
         {blouse.extra?.map((d) => (
-          <path key={`${d}-e`} d={d} fill="url(#lk-blouse)" opacity=".9" />
+          <path key={`${d}-e`} d={d} fill={`url(#${p}blouse)`} opacity=".9" />
         ))}
         <path d={blouse.body} fill="none" stroke={lehenga.shade} strokeWidth="1" />
         <path d="M148,212 L252,212" stroke={look.embroidery === "minimal" ? GOLD_DEEP : GOLD} strokeWidth="3" opacity=".9" />
@@ -206,7 +224,7 @@ export function LehengaSketch({ look }: { look: Look }) {
             <circle cx="200" cy="114" r="2" fill={GOLD} stroke="none" />
           </>
         )}
-        {look.jewellery === "jhumka" && (
+        {look.jewellery === "jhumka" && !bare && (
           <g transform="translate(300 70)" strokeWidth="1.2">
             {[0, 34].map((dx) => (
               <g key={dx} transform={`translate(${dx} 0)`}>
@@ -223,7 +241,7 @@ export function LehengaSketch({ look }: { look: Look }) {
       </g>
 
       {/* Base */}
-      <path d="M150,708 H250" stroke="#b9a582" strokeWidth="1" />
+      {!bare && <path d="M150,708 H250" stroke="#b9a582" strokeWidth="1" />}
     </svg>
   );
 }

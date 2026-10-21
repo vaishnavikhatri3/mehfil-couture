@@ -6,6 +6,7 @@ import { Footer } from "./components/Footer";
 import { WhatsAppButton } from "./components/WhatsAppButton";
 import { Toaster } from "./components/Toaster";
 import { ConsentBanner } from "./components/ConsentBanner";
+import { TryOnLens } from "./components/TryOnLens";
 import Home from "./pages/Home";
 import Article from "./pages/Article";
 import Privacy from "./pages/Privacy";
@@ -28,6 +29,7 @@ function Layout() {
       <Navigation />
       <Outlet />
       <Footer />
+      <TryOnLens />
       <WhatsAppButton />
       <ConsentBanner />
       <Toaster />

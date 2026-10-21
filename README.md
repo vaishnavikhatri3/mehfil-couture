@@ -54,7 +54,15 @@ Services in `brand.ts` show on the site only when `verified: true`. The campaign
 
 ## Analytics events
 
-`collection_click`, `enquiry_open`, `appointment_submit`, `studio_complete`, `studio_share`, `newsletter_submit`, `campaign_click`, `look_saved`, `journal_open` — dispatched as a `mehfil:track` DOM event and, with consent + `VITE_ANALYTICS_ENABLED=true`, pushed to `dataLayer`. No form contents are ever included.
+`collection_click`, `enquiry_open`, `appointment_submit`, `studio_complete`, `studio_share`, `newsletter_submit`, `campaign_click`, `look_saved`, `journal_open`, `lens_open`, `lens_photo_added`, `lens_download`, `lens_share` — dispatched as a `mehfil:track` DOM event and, with consent + `VITE_ANALYTICS_ENABLED=true`, pushed to `dataLayer`. No form contents are ever included.
+
+## Try-on lens
+
+The floating **Try-on lens** button (bottom-left on every page, and “Try it on” in the Atelier Sketchbook) lets visitors add a photo and position an illustrated lehenga over it — drag, pinch/scroll to resize, tilt, blend — then save/share the composite or enquire. It is deliberately labelled a *styling overlay*, not a realistic virtual try-on.
+
+Privacy: the photo is read with an object URL and composited on a canvas **entirely in the browser**; nothing is uploaded or stored, and the URL is revoked when the lens closes.
+
+A realistic AI try-on would need a paid virtual try-on API (e.g. FASHN, fal.ai IDM-VTON) called from a server-side Worker so the API key stays secret, plus real Mehfil product photos as the garment input.
 
 ## Motion & accessibility notes
 

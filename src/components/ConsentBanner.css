@@ -1,7 +1,7 @@
 .consent {
   position: fixed;
   left: calc(16px + env(safe-area-inset-left));
-  bottom: calc(16px + env(safe-area-inset-bottom));
+  bottom: calc(76px + env(safe-area-inset-bottom)); /* above the try-on lens button */
   z-index: 90;
   width: min(420px, calc(100vw - 104px));
   display: grid;
