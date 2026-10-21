@@ -13,7 +13,9 @@ npm run build      # type-check + production build → dist/
 npm run preview    # serve the production build
 ```
 
-It's a single-page app with real routes (`/journal/:slug`, `/privacy`). `public/_redirects` (Netlify) and `vercel.json` (Vercel) already rewrite unknown paths to `index.html`; configure the same on any other host.
+It's a single-page app with real routes (`/journal/:slug`, `/privacy`), so unknown paths must serve `index.html`.
+
+**Deploy to Cloudflare:** `npm run build && npx wrangler deploy` (config in `wrangler.jsonc`, SPA fallback included). `vercel.json` covers Vercel; on other hosts add an equivalent rewrite.
 
 ## Configuration
 

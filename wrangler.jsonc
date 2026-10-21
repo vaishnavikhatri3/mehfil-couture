@@ -1,0 +1,11 @@
+{
+  // Cloudflare Workers static-assets deployment (`npm run build && npx wrangler deploy`).
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "mehfil-couture",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./dist",
+    // SPA: unknown paths like /journal/:slug serve index.html
+    "not_found_handling": "single-page-application"
+  }
+}
