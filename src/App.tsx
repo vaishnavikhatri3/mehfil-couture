@@ -8,6 +8,8 @@ import { Toaster } from "./components/Toaster";
 import { ConsentBanner } from "./components/ConsentBanner";
 import { TryOnLens } from "./components/TryOnLens";
 import { ZoomViewer } from "./components/ZoomViewer";
+import { MeasurementPassport } from "./components/MeasurementPassport";
+import { TrousseauPlanner } from "./components/TrousseauPlanner";
 import Home from "./pages/Home";
 import Article from "./pages/Article";
 import Privacy from "./pages/Privacy";
@@ -41,6 +43,8 @@ function Layout() {
         <Outlet />
       </Suspense>
       <Footer />
+      <TrousseauPlanner />
+      <MeasurementPassport />
       {!isTool && <TryOnLens />}
       <WhatsAppButton />
       <ConsentBanner />

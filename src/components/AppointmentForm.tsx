@@ -1,10 +1,14 @@
-import { useId, useRef, useState } from "react";
-import { ArrowRight, Check } from "lucide-react";
+import { useEffect, useId, useRef, useState } from "react";
+import { ArrowRight, Check, Ruler, Sparkles } from "lucide-react";
 import { brand } from "../config/brand";
 import { collectionNames } from "../data/collections";
 import { studioOccasions } from "../data/studio";
 import { openEnquiry, enquiryChannel } from "../lib/enquiry";
 import { track } from "../lib/analytics";
+import { openPassport, PASSPORT_UPDATED } from "../lib/passportBus";
+import { openTrousseau, TROUSSEAU_UPDATED } from "../lib/trousseauBus";
+import { hasSavedPassport, loadPassport, formatPassportForEnquiry, type PassportData } from "../data/measurements";
+import { hasSavedTrousseau, loadTrousseau, formatTrousseauForEnquiry, type TrousseauPlan } from "../data/trousseau";
 import "./AppointmentForm.css";
 
 type Fields = {
@@ -50,7 +54,24 @@ export function AppointmentForm() {
   const [f, setF] = useState<Fields>({ name: "", contact: "", occasion: "", date: "", collection: "", notes: "", consent: false });
   const [errors, setErrors] = useState<Errors>({});
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "handoff" | "error">("idle");
+  const [passport, setPassport] = useState<PassportData | null>(() => (hasSavedPassport() ? loadPassport() : null));
+  const [trousseau, setTrousseau] = useState<TrousseauPlan | null>(() => (hasSavedTrousseau() ? loadTrousseau() : null));
   const formRef = useRef<HTMLFormElement>(null);
+
+  useEffect(() => {
+    const onPassportUpdate = () => {
+      setPassport(hasSavedPassport() ? loadPassport() : null);
+    };
+    const onTrousseauUpdate = () => {
+      setTrousseau(hasSavedTrousseau() ? loadTrousseau() : null);
+    };
+    window.addEventListener(PASSPORT_UPDATED, onPassportUpdate);
+    window.addEventListener(TROUSSEAU_UPDATED, onTrousseauUpdate);
+    return () => {
+      window.removeEventListener(PASSPORT_UPDATED, onPassportUpdate);
+      window.removeEventListener(TROUSSEAU_UPDATED, onTrousseauUpdate);
+    };
+  }, []);
 
   const set = <K extends keyof Fields>(k: K) => (v: Fields[K]) => {
     setF((s) => ({ ...s, [k]: v }));
@@ -66,6 +87,8 @@ export function AppointmentForm() {
       `Preferred date: ${formatDate(f.date)}`,
       f.collection ? `Interested in: ${f.collection}` : null,
       f.notes.trim() ? `Notes: ${f.notes.trim()}` : null,
+      passport ? `\n--- ATTACHED BESPOKE MEASUREMENT PASSPORT ---\n${formatPassportForEnquiry(passport)}` : null,
+      trousseau ? `\n--- ATTACHED WEDDING TROUSSEAU DOSSIER ---\n${formatTrousseauForEnquiry(trousseau)}` : null,
     ]
       .filter(Boolean)
       .join("\n");
@@ -205,6 +228,55 @@ export function AppointmentForm() {
           ))}
         </select>
       </div>
+
+      {passport ? (
+        <div className="appt__passport-badge">
+          <div className="appt__passport-icon">
+            <Ruler size={16} />
+          </div>
+          <div className="appt__passport-info">
+            <strong>Bespoke 14-Point Passport Attached</strong>
+            <span>
+              {passport.unit === "inches" ? "Calibrated in inches" : "Calibrated in cm"} · Ready for Indore atelier
+            </span>
+          </div>
+          <button type="button" className="link-arrow" onClick={() => openPassport()}>
+            Review / Edit
+          </button>
+        </div>
+      ) : (
+        <div className="appt__passport-prompt">
+          <button type="button" className="appt__passport-link" onClick={() => openPassport()}>
+            <Sparkles size={14} />
+            <span>Calibrate your 14-Point Measurement Passport (Recommended for custom fittings & bridal orders)</span>
+          </button>
+        </div>
+      )}
+
+      {trousseau ? (
+        <div className="appt__passport-badge">
+          <div className="appt__passport-icon" style={{ background: "var(--maroon-deep)", color: "var(--gold-soft)" }}>
+            👑
+          </div>
+          <div className="appt__passport-info">
+            <strong>Wedding Trousseau Plan Attached</strong>
+            <span>
+              {trousseau.weddingDate ? `Target: ${trousseau.weddingDate} · ` : ""}
+              Multi-ceremony wardrobe curated for Indore stylists
+            </span>
+          </div>
+          <button type="button" className="link-arrow" onClick={() => openTrousseau()}>
+            Review / Edit
+          </button>
+        </div>
+      ) : (
+        <div className="appt__passport-prompt">
+          <button type="button" className="appt__passport-link" onClick={() => openTrousseau()}>
+            <Sparkles size={14} />
+            <span>Curate your full Wedding Trousseau Wardrobe (Haldi, Mehendi, Sangeet, Pheras)</span>
+          </button>
+        </div>
+      )}
 
       <div className="field">
         <label htmlFor={id("notes")}>Notes (optional)</label>

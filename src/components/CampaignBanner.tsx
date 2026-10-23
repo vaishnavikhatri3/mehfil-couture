@@ -1,8 +1,8 @@
 import { ArrowRight } from "lucide-react";
 import { campaign } from "../config/brand";
 import { photos } from "../data/images";
-import { openEnquiry } from "../lib/enquiry";
 import { track } from "../lib/analytics";
+import { openTrousseau } from "../lib/trousseauBus";
 import { Img } from "./Img";
 import "./CampaignBanner.css";
 
@@ -39,10 +39,7 @@ export function CampaignBanner() {
             className="btn btn--light"
             onClick={() => {
               track("campaign_click", { campaign: campaign.kicker });
-              openEnquiry(
-                "Hi Mehfil Couture! I'm planning my looks for this wedding season and would love your help — what's in the studio right now?",
-                "campaign",
-              );
+              openTrousseau();
             }}
           >
             {campaign.cta} <ArrowRight />

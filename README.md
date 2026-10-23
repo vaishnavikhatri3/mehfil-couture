@@ -15,6 +15,8 @@ npm start          # production: dist/ + API on one port (PORT, default 8080)
 
 Requires **Node 22.13+** (the API uses Node's built-in SQLite — no database to install). Put `ADMIN_PASSCODE` in `.env.local` for `npm run dev`; for `npm start` set it as an environment variable.
 
+As a Single-Page Application (SPA) handling dynamic client-side routing (`/journal/:slug`, `/privacy`), all fallback and unmapped server paths must rewrite upstream to `index.html` to allow React Router to gracefully resolve deep links.
+
 ### What's in it
 
 | Route | What it is |
@@ -109,7 +111,8 @@ The floating **Try-on lens** button (bottom-left on every page, and “Try it on
 
 Privacy: the photo is read with an object URL and composited on a canvas **entirely in the browser**; nothing is uploaded or stored, and the URL is revoked when the lens closes.
 
-A realistic AI try-on would need a paid virtual try-on API (e.g. FASHN, fal.ai IDM-VTON) called from a server-side Worker so the API key stays secret, plus real Mehfil product photos as the garment input.
+A realistic AI try-on woul
+d need a paid virtual try-on API (e.g. FASHN, fal.ai IDM-VTON) called from a server-side Worker so the API key stays secret, plus real Mehfil product photos as the garment input.
 
 ## Motion & accessibility notes
 

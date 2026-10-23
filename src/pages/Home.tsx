@@ -4,8 +4,10 @@ import { HeroSection } from "../components/HeroSection";
 import { CollectionEditorial } from "../components/CollectionEditorial";
 import { LehengaReveal } from "../components/LehengaReveal";
 import { OccasionExplorer } from "../components/OccasionExplorer";
+import { TrousseauSection } from "../components/TrousseauSection";
 import { StyleStudio } from "../components/StyleStudio";
 import { MixAndMatch } from "../components/MixAndMatch";
+import { PassportSection } from "../components/PassportSection";
 import { BrandStory } from "../components/BrandStory";
 import { CampaignBanner } from "../components/CampaignBanner";
 import { FashionJournal } from "../components/FashionJournal";
@@ -35,8 +37,10 @@ export default function Home() {
       <CollectionEditorial />
       <LehengaReveal />
       <OccasionExplorer />
+      <TrousseauSection />
       <StyleStudio />
       <MixAndMatch />
+      <PassportSection />
       <BrandStory />
       <CampaignBanner />
       <FashionJournal />
