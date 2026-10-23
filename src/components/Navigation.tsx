@@ -151,6 +151,9 @@ export function Navigation() {
                 {l.label}
               </a>
             ))}
+            <Link to="/fitcheck" className="nav__link" onClick={() => setMega(false)}>
+              Measure Me
+            </Link>
           </nav>
           <button type="button" className="nav__cta" onClick={() => generalEnquiry()}>
             <span>Enquire</span>
@@ -251,6 +254,10 @@ export function Navigation() {
               {l.label}
             </a>
           ))}
+          <Link to="/fitcheck" onClick={() => setMobile(false)} style={{ transitionDelay: mobile ? "450ms" : "0ms" }}>
+            <span className="mmenu__no">08</span>
+            Measure Me
+          </Link>
         </nav>
         <div className="mmenu__foot">
           <button

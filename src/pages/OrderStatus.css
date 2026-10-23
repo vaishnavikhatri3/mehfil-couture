@@ -1,0 +1,70 @@
+.os {
+  display: grid;
+  gap: 22px;
+  padding-block: clamp(36px, 5vw, 72px) var(--section-y);
+  max-width: 900px;
+}
+.os__steps {
+  list-style: none;
+  margin: 10px 0;
+  padding: 0;
+  display: grid;
+}
+.os__steps li {
+  position: relative;
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 16px;
+  padding-bottom: 26px;
+  color: var(--ink-soft);
+}
+.os__steps li::before {
+  content: "";
+  position: absolute;
+  left: 13px;
+  top: 26px;
+  bottom: 0;
+  width: 2px;
+  background: var(--line);
+}
+.os__steps li:last-child::before {
+  display: none;
+}
+.os__steps li.is-done::before {
+  background: var(--sage);
+}
+.os__dot {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid var(--line);
+  background: var(--paper);
+  z-index: 1;
+}
+.os__steps li.is-done .os__dot {
+  background: var(--sage);
+  border-color: var(--sage);
+}
+.os__steps li.is-now .os__dot {
+  background: var(--maroon);
+  border-color: var(--maroon);
+  box-shadow: 0 0 0 5px var(--gold-tint);
+}
+.os__steps b {
+  font-family: var(--display-2);
+  font-size: 1.45rem;
+  font-weight: 500;
+  color: var(--ink);
+}
+.os__steps p {
+  margin: 2px 0;
+  font-size: 14.5px;
+}
+.os__steps small {
+  display: block;
+  font-size: 12.5px;
+  color: var(--ink-soft);
+}
+.os .btn {
+  justify-self: start;
+}

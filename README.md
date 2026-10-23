@@ -8,14 +8,42 @@ React 19 · TypeScript · Vite · GSAP + ScrollTrigger · plain CSS (design toke
 
 ```bash
 npm install
-npm run dev        # http://localhost:5173
+npm run dev        # site + API on http://localhost:5173 (data in data/mehfil.db)
 npm run build      # type-check + production build → dist/
-npm run preview    # serve the production build
+npm start          # production: dist/ + API on one port (PORT, default 8080)
 ```
 
-It's a single-page app with real routes (`/journal/:slug`, `/privacy`), so unknown paths must serve `index.html`.
+Requires **Node 22.13+** (the API uses Node's built-in SQLite — no database to install). Put `ADMIN_PASSCODE` in `.env.local` for `npm run dev`; for `npm start` set it as an environment variable.
 
-**Deploy to Cloudflare:** `npm run build && npx wrangler deploy` (config in `wrangler.jsonc`, SPA fallback included). `vercel.json` covers Vercel; on other hosts add an equivalent rewrite.
+### What's in it
+
+| Route | What it is |
+| --- | --- |
+| `/` | The Mehfil Couture editorial site |
+| `/fitcheck` | **Mehfil FitCheck** — remote measurement validator & tailoring spec engine (Problem Statement) |
+| `/p/:code` | **QR digital passport** — what a customer sees after scanning a tag |
+| `/order/:id` | Customer order timeline (also the save / resume link) |
+| `/admin` | **Studio portal** — dashboard, designs, QR generator (lots), leads, FitCheck orders, size charts |
+
+**Studio portal passcode:** `mehfil-admin-2026` by default — set `ADMIN_PASSCODE` before going live.
+
+#### FitCheck (problem-statement modules)
+1. **Core validation & spec** — `src/lib/fitcheck/validate.ts`: missing fields → hard human limits → inch/cm detection (per field and whole form) → typo & decimal-slip detection → anatomical ratio rules (e.g. waist vs hip, under-bust vs bust, shoulder vs bust) → size-chart benchmark → 0–100 confidence, green / yellow / red. Red blocks the spec; yellow can be confirmed. `tailoring.ts` adds ease + seam allowances and checks delivery feasibility (embroidery + stitching + finishing + shipping vs event date).
+2. **Garment dimension inference** — `garment.ts`: body = flat width × 2 − garment ease + fabric stretch (blouse / kurti / dress; cotton … knit).
+3. **Visual measurement helper** — `components/fitcheck/MeasureGuide.tsx`: animated SVG body & flat-garment guides with tips per measurement.
+4. **Public size chart ingestion** — Studio portal → Size charts: paste a CSV / table (Indian, UK, US; cm or in, ranges OK) → used as the benchmark baseline.
+5. **OCR handwritten card parser** — `ocr.ts`: Tesseract.js runs in the browser (photo never uploaded), a Hinglish tailor dictionary with fuzzy matching (chhati, kamar, teera, baazu, lambai…), then a review screen. Try it with “Try a sample card”.
+
+Crisis-brief adaptations: garment fast path, transparent order timeline (confirmed → stylist review → tailor review → production → ready → delivered), stylist-assisted review request, and save & resume (draft autosaves on the device; the order link resumes tracking).
+
+#### QR system
+- **Designs** hold what the passport shows: embroidery story, fabric, care, colours, sizes, occasions.
+- **QR generator → lots**: pick a design, add colour × size × quantity lines; each piece gets a unique code (`MC-LP-014-4F2A9C`) stored as *in stock*, and a QR that opens `<site>/p/<code>`. Print the label sheet; mark pieces reserved / sold.
+- **Passport**: story, fabric, live colour × size availability, then the **5 details** — preferences, mobile, size, location (GPS with permission *or* typed), colours — saved **only** with an unticked-by-default consent box (text + time stored).
+- **Leads**: filter, export CSV, **Send picks** (opens WhatsApp Business with recommendations matched on colour, occasion and size — you press send), mark contacted, delete on request.
+- **Dashboard**: scans, leads, scan → lead %, stock, orders; 14-day scans vs leads; colour, size, occasion and location breakdowns; designs by interest. “Load sample leads” adds DEMO-flagged rows for presentations and removes them in one click.
+
+**Deploying with the API:** the API needs a Node host (Render, Railway, a VPS…): `npm run build && npm start`, with a persistent disk for `data/`. A static-only host (Cloudflare Pages / Workers assets) serves the website but not `/fitcheck` saving, passports or the portal.
 
 ## Configuration
 
