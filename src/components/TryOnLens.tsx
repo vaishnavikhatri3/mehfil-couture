@@ -1,25 +1,76 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { ArrowRight, Download, ImagePlus, Move, RotateCcw, ScanFace, ScanLine, Share2, ShieldCheck, X } from "lucide-react";
+import {
+  ArrowRight,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  ChevronUp,
+  Download,
+  Eye,
+  EyeOff,
+  ImagePlus,
+  Layers,
+  Move,
+  RotateCcw,
+  ScanFace,
+  ScanLine,
+  Share2,
+  ShieldCheck,
+  Target,
+  X,
+} from "lucide-react";
 import { blouseStyles, defaultLook, dupattaColours, embroideryMoods, lehengaColours, type Look } from "../data/mixmatch";
 import { OPEN_LENS } from "../lib/lensBus";
 import { openEnquiry } from "../lib/enquiry";
 import { toast } from "../lib/toast";
 import { track } from "../lib/analytics";
-import { scanBody, type Fit } from "../lib/pose";
+import { scanBody } from "../lib/pose";
 import { LehengaSketch } from "./LehengaSketch";
 import "./TryOnLens.css";
 
 /**
- * Try-on Lens — a playful styling OVERLAY, not a realistic virtual try-on.
- * The visitor's photo is read locally via an object URL: it is never uploaded,
- * stored or sent anywhere, and is released when the lens closes. A pose scan
- * (also in-browser) fits the overlay from neck to toe.
+ * Try-on Lens — styling overlay with in-browser AI body pose scanning,
+ * tactile alignment controls, smart presets, and fabric blend modes.
+ * The visitor's photo is processed locally via an object URL: it is never uploaded,
+ * stored or sent anywhere, and is released when the lens closes.
  */
 
 type Photo = { url: string; w: number; h: number };
 type Scan = "idle" | "scanning" | "fitted" | "manual";
+type BlendMode = "normal" | "multiply" | "soft-light";
 
-const DEFAULT_FIT: Fit = { x: 0.5, y: 0.6, scale: 0.6, rotate: 0, opacity: 0.92, stretch: 1 };
+export type Fit = {
+  x: number;
+  y: number;
+  scale: number;
+  rotate: number;
+  opacity: number;
+  stretch: number;
+  blendMode: BlendMode;
+};
+
+const DEFAULT_FIT: Fit = {
+  x: 0.5,
+  y: 0.55,
+  scale: 0.7,
+  rotate: 0,
+  opacity: 0.94,
+  stretch: 1,
+  blendMode: "normal",
+};
+
+const FIT_PRESETS: { id: string; label: string; fit: Partial<Fit> }[] = [
+  { id: "torso", label: "🎯 Auto Torso", fit: { x: 0.5, y: 0.55, scale: 0.7, stretch: 1, rotate: 0 } },
+  { id: "full", label: "👗 Full Body", fit: { x: 0.5, y: 0.52, scale: 0.82, stretch: 1.05, rotate: 0 } },
+  { id: "choli", label: "✨ Choli Focus", fit: { x: 0.5, y: 0.74, scale: 1.25, stretch: 0.95, rotate: 0 } },
+];
+
+const BLEND_MODES: { key: BlendMode; label: string; desc: string }[] = [
+  { key: "normal", label: "Vibrant", desc: "Crisp editorial overlay" },
+  { key: "multiply", label: "Fabric Wrap", desc: "Natural drape over body & shadows" },
+  { key: "soft-light", label: "Luminous", desc: "Soft ambient lighting blend" },
+];
+
 const VB = { w: 360, h: 630 }; // bare sketch viewBox
 const MAX_BYTES = 15 * 1024 * 1024;
 const clamp = (v: number, a: number, b: number) => Math.min(b, Math.max(a, v));
@@ -35,6 +86,7 @@ export function TryOnLens() {
   const [busy, setBusy] = useState(false);
   const [scan, setScan] = useState<Scan>("idle");
   const [autoFit, setAutoFit] = useState<Fit | null>(null);
+  const [showGuides, setShowGuides] = useState(false);
   const scanId = useRef(0);
 
   const stageRef = useRef<HTMLDivElement>(null);
@@ -72,6 +124,7 @@ export function TryOnLens() {
     setFit(DEFAULT_FIT);
     setAutoFit(null);
     setScan("idle");
+    setShowGuides(false);
   }, []);
 
   const close = useCallback(() => {
@@ -141,11 +194,23 @@ export function TryOnLens() {
     const url = URL.createObjectURL(file);
     const img = new Image();
     img.onload = () => {
+      const aspect = img.naturalHeight / img.naturalWidth;
+      let initialFit: Fit = { ...DEFAULT_FIT };
+      if (aspect >= 1.4) {
+        // Tall portrait / full length (e.g. mobile photo)
+        initialFit = { ...DEFAULT_FIT, x: 0.5, y: 0.54, scale: 0.72 };
+      } else if (aspect >= 1.1) {
+        // Standard 4:3 portrait
+        initialFit = { ...DEFAULT_FIT, x: 0.5, y: 0.54, scale: 0.65 };
+      } else {
+        // Wide / landscape
+        initialFit = { ...DEFAULT_FIT, x: 0.5, y: 0.52, scale: 0.56 };
+      }
       setPhoto((prev) => {
         if (prev) URL.revokeObjectURL(prev.url);
         return { url, w: img.naturalWidth, h: img.naturalHeight };
       });
-      setFit(DEFAULT_FIT);
+      setFit(initialFit);
       setAutoFit(null);
       track("lens_photo_added");
 
@@ -156,14 +221,22 @@ export function TryOnLens() {
         .then((f) => {
           if (id !== scanId.current) return;
           if (f) {
-            setFit(f);
-            setAutoFit(f);
+            const fitted: Fit = { ...f, blendMode: initialFit.blendMode };
+            setFit(fitted);
+            setAutoFit(fitted);
+            setScan("fitted");
+            toast("AI body scan fitted the lehenga to your silhouette!");
+          } else {
+            setScan("manual");
+            toast("Photo loaded! Use the Body Fit controls or drag to align over your silhouette.");
           }
-          setScan(f ? "fitted" : "manual");
           track("lens_autofit", { found: !!f });
         })
         .catch(() => {
-          if (id === scanId.current) setScan("manual");
+          if (id === scanId.current) {
+            setScan("manual");
+            toast("Photo loaded! Use the Body Fit controls or drag to align over your silhouette.");
+          }
         });
     };
     img.onerror = () => {
@@ -171,6 +244,14 @@ export function TryOnLens() {
       setError("We couldn't read that photo. Please try another one.");
     };
     img.src = url;
+  };
+
+  const nudge = (dx: number, dy: number) => {
+    setFit((f) => ({
+      ...f,
+      x: clamp(+(f.x + dx).toFixed(3), -0.2, 1.2),
+      y: clamp(+(f.y + dy).toFixed(3), -0.2, 1.2),
+    }));
   };
 
   // ── Drag & pinch the overlay ──
@@ -252,6 +333,13 @@ export function TryOnLens() {
       const oh = (ow * VB.h * fit.stretch) / VB.w;
       ctx.save();
       ctx.globalAlpha = fit.opacity;
+      if (fit.blendMode === "multiply") {
+        ctx.globalCompositeOperation = "multiply";
+      } else if (fit.blendMode === "soft-light") {
+        ctx.globalCompositeOperation = "soft-light";
+      } else {
+        ctx.globalCompositeOperation = "source-over";
+      }
       ctx.translate(fit.x * cw, fit.y * ch);
       ctx.rotate((fit.rotate * Math.PI) / 180);
       ctx.drawImage(overlay, -ow / 2, -oh / 2, ow, oh);
@@ -373,6 +461,7 @@ export function TryOnLens() {
                         width: `${fit.scale * 100}%`,
                         aspectRatio: `${VB.w} / ${VB.h * fit.stretch}`,
                         opacity: fit.opacity,
+                        mixBlendMode: fit.blendMode,
                         transform: `translate(-50%, -50%) rotate(${fit.rotate}deg)`,
                       }}
                       onPointerDown={onPointerDown}
@@ -383,11 +472,27 @@ export function TryOnLens() {
                     >
                       <LehengaSketch look={look} bare stretch svgRef={svgRef} className="lens__svg lens__svg--fill" />
                     </div>
+
                     {scan === "scanning" && (
                       <div className="lens__scan" aria-hidden="true">
                         <span className="lens__scan-line" />
                       </div>
                     )}
+
+                    {showGuides && (
+                      <div className="lens__guides" aria-hidden="true">
+                        <div className="lens__guide lens__guide--shoulder" style={{ top: `${(fit.y - fit.scale * 0.4) * 100}%` }}>
+                          <span>Shoulders</span>
+                        </div>
+                        <div className="lens__guide lens__guide--waist" style={{ top: `${(fit.y - fit.scale * 0.12) * 100}%` }}>
+                          <span>Natural Waist</span>
+                        </div>
+                        <div className="lens__guide lens__guide--hem" style={{ top: `${(fit.y + fit.scale * 0.46 * fit.stretch) * 100}%` }}>
+                          <span>Lehenga Hem</span>
+                        </div>
+                      </div>
+                    )}
+
                     <span className="lens__hint label" role="status">
                       {scan === "scanning" ? (
                         <>
@@ -395,11 +500,11 @@ export function TryOnLens() {
                         </>
                       ) : scan === "fitted" ? (
                         <>
-                          <Move size={12} /> Fitted to you · drag or resize to adjust
+                          <Move size={12} /> AI fitted to you · drag or resize to adjust
                         </>
                       ) : scan === "manual" ? (
                         <>
-                          <Move size={12} /> Couldn't find a full figure · drag to place it
+                          <Move size={12} /> Use Body Fit controls or drag to position
                         </>
                       ) : (
                         <>
@@ -499,12 +604,113 @@ export function TryOnLens() {
 
                 {photo && (
                   <fieldset className="lens__group lens__fit">
-                    <legend className="label">Fit</legend>
+                    <div className="lens__fit-head">
+                      <legend className="label">Body Fit & Drape</legend>
+                      <button
+                        type="button"
+                        className={`lens__guides-btn ${showGuides ? "is-active" : ""}`}
+                        onClick={() => setShowGuides((g) => !g)}
+                        title="Toggle shoulder, waist and hem reference lines"
+                      >
+                        {showGuides ? <EyeOff size={13} /> : <Eye size={13} />}
+                        <span>{showGuides ? "Hide Guides" : "Align Guides"}</span>
+                      </button>
+                    </div>
+
+                    {/* Presets */}
+                    <div className="lens__presets">
+                      {FIT_PRESETS.map((p) => (
+                        <button
+                          key={p.id}
+                          type="button"
+                          className="lens__preset-btn"
+                          onClick={() => setFit((f) => ({ ...f, ...p.fit }))}
+                        >
+                          {p.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* D-Pad Micro Nudge */}
+                    <div className="lens__dpad-wrap">
+                      <div className="lens__dpad">
+                        <button
+                          type="button"
+                          className="lens__dpad-btn lens__dpad-btn--up"
+                          onClick={() => nudge(0, -0.02)}
+                          title="Nudge Up"
+                          aria-label="Nudge lehenga up"
+                        >
+                          <ChevronUp size={16} />
+                        </button>
+                        <div className="lens__dpad-middle">
+                          <button
+                            type="button"
+                            className="lens__dpad-btn lens__dpad-btn--left"
+                            onClick={() => nudge(-0.02, 0)}
+                            title="Nudge Left"
+                            aria-label="Nudge lehenga left"
+                          >
+                            <ChevronLeft size={16} />
+                          </button>
+                          <button
+                            type="button"
+                            className="lens__dpad-btn lens__dpad-btn--center"
+                            onClick={() => setFit((f) => ({ ...f, x: 0.5 }))}
+                            title="Snap to Center"
+                            aria-label="Snap lehenga horizontally to center"
+                          >
+                            <Target size={14} />
+                          </button>
+                          <button
+                            type="button"
+                            className="lens__dpad-btn lens__dpad-btn--right"
+                            onClick={() => nudge(0.02, 0)}
+                            title="Nudge Right"
+                            aria-label="Nudge lehenga right"
+                          >
+                            <ChevronRight size={16} />
+                          </button>
+                        </div>
+                        <button
+                          type="button"
+                          className="lens__dpad-btn lens__dpad-btn--down"
+                          onClick={() => nudge(0, 0.02)}
+                          title="Nudge Down"
+                          aria-label="Nudge lehenga down"
+                        >
+                          <ChevronDown size={16} />
+                        </button>
+                      </div>
+                      <span className="lens__dpad-caption">Tap arrows for micro body-fitting</span>
+                    </div>
+
+                    {/* Fine Sliders */}
+                    <label>
+                      <span>Position X</span>
+                      <input
+                        type="range"
+                        min={10}
+                        max={90}
+                        value={Math.round(fit.x * 100)}
+                        onChange={(e) => setFit((f) => ({ ...f, x: +e.target.value / 100 }))}
+                      />
+                    </label>
+                    <label>
+                      <span>Position Y</span>
+                      <input
+                        type="range"
+                        min={10}
+                        max={90}
+                        value={Math.round(fit.y * 100)}
+                        onChange={(e) => setFit((f) => ({ ...f, y: +e.target.value / 100 }))}
+                      />
+                    </label>
                     <label>
                       <span>Size</span>
                       <input
                         type="range"
-                        min={15}
+                        min={20}
                         max={160}
                         value={Math.round(fit.scale * 100)}
                         onChange={(e) => setFit((f) => ({ ...f, scale: +e.target.value / 100 }))}
@@ -522,10 +728,16 @@ export function TryOnLens() {
                     </label>
                     <label>
                       <span>Tilt</span>
-                      <input type="range" min={-20} max={20} value={fit.rotate} onChange={(e) => setFit((f) => ({ ...f, rotate: +e.target.value }))} />
+                      <input
+                        type="range"
+                        min={-20}
+                        max={20}
+                        value={fit.rotate}
+                        onChange={(e) => setFit((f) => ({ ...f, rotate: +e.target.value }))}
+                      />
                     </label>
                     <label>
-                      <span>Blend</span>
+                      <span>Opacity</span>
                       <input
                         type="range"
                         min={40}
@@ -534,6 +746,27 @@ export function TryOnLens() {
                         onChange={(e) => setFit((f) => ({ ...f, opacity: +e.target.value / 100 }))}
                       />
                     </label>
+
+                    {/* Drape / Blend Modes */}
+                    <div className="lens__blend-modes">
+                      <span className="lens__blend-title">
+                        <Layers size={13} /> Fabric Drape Blend
+                      </span>
+                      <div className="lens__blend-chips">
+                        {BLEND_MODES.map((b) => (
+                          <button
+                            key={b.key}
+                            type="button"
+                            className={`lens__blend-chip ${fit.blendMode === b.key ? "is-selected" : ""}`}
+                            onClick={() => setFit((f) => ({ ...f, blendMode: b.key }))}
+                            title={b.desc}
+                          >
+                            {b.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
                     <div className="lens__row">
                       <button type="button" className="mm__tool" onClick={() => setFit(autoFit ?? DEFAULT_FIT)}>
                         <RotateCcw size={16} /> {autoFit ? "Re-fit to me" : "Reset fit"}
