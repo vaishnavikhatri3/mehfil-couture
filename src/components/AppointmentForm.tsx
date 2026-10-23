@@ -1,10 +1,12 @@
-import { useId, useRef, useState } from "react";
-import { ArrowRight, Check } from "lucide-react";
+import { useEffect, useId, useRef, useState } from "react";
+import { ArrowRight, Check, Ruler, Sparkles } from "lucide-react";
 import { brand } from "../config/brand";
 import { collectionNames } from "../data/collections";
 import { studioOccasions } from "../data/studio";
 import { openEnquiry, enquiryChannel } from "../lib/enquiry";
 import { track } from "../lib/analytics";
+import { openPassport, PASSPORT_UPDATED } from "../lib/passportBus";
+import { hasSavedPassport, loadPassport, formatPassportForEnquiry, type PassportData } from "../data/measurements";
 import "./AppointmentForm.css";
 
 type Fields = {
@@ -50,7 +52,16 @@ export function AppointmentForm() {
   const [f, setF] = useState<Fields>({ name: "", contact: "", occasion: "", date: "", collection: "", notes: "", consent: false });
   const [errors, setErrors] = useState<Errors>({});
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "handoff" | "error">("idle");
+  const [passport, setPassport] = useState<PassportData | null>(() => (hasSavedPassport() ? loadPassport() : null));
   const formRef = useRef<HTMLFormElement>(null);
+
+  useEffect(() => {
+    const onUpdate = () => {
+      setPassport(hasSavedPassport() ? loadPassport() : null);
+    };
+    window.addEventListener(PASSPORT_UPDATED, onUpdate);
+    return () => window.removeEventListener(PASSPORT_UPDATED, onUpdate);
+  }, []);
 
   const set = <K extends keyof Fields>(k: K) => (v: Fields[K]) => {
     setF((s) => ({ ...s, [k]: v }));
@@ -66,6 +77,7 @@ export function AppointmentForm() {
       `Preferred date: ${formatDate(f.date)}`,
       f.collection ? `Interested in: ${f.collection}` : null,
       f.notes.trim() ? `Notes: ${f.notes.trim()}` : null,
+      passport ? `\n--- ATTACHED BESPOKE MEASUREMENT PASSPORT ---\n${formatPassportForEnquiry(passport)}` : null,
     ]
       .filter(Boolean)
       .join("\n");
@@ -205,6 +217,30 @@ export function AppointmentForm() {
           ))}
         </select>
       </div>
+
+      {passport ? (
+        <div className="appt__passport-badge">
+          <div className="appt__passport-icon">
+            <Ruler size={16} />
+          </div>
+          <div className="appt__passport-info">
+            <strong>Bespoke 14-Point Passport Attached</strong>
+            <span>
+              {passport.unit === "inches" ? "Calibrated in inches" : "Calibrated in cm"} · Ready for Indore atelier
+            </span>
+          </div>
+          <button type="button" className="link-arrow" onClick={() => openPassport()}>
+            Review / Edit
+          </button>
+        </div>
+      ) : (
+        <div className="appt__passport-prompt">
+          <button type="button" className="appt__passport-link" onClick={() => openPassport()}>
+            <Sparkles size={14} />
+            <span>Calibrate your 14-Point Measurement Passport (Recommended for custom fittings & bridal orders)</span>
+          </button>
+        </div>
+      )}
 
       <div className="field">
         <label htmlFor={id("notes")}>Notes (optional)</label>

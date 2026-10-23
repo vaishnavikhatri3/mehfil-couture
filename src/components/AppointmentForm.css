@@ -77,3 +77,69 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Measurement Passport integration in appointment form */
+.appt__passport-badge {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: var(--paper-2);
+  border: 1px solid var(--gold);
+  padding: 12px 16px;
+}
+.appt__passport-icon {
+  width: 32px;
+  height: 32px;
+  background: var(--gold-tint);
+  color: var(--maroon);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.appt__passport-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+.appt__passport-info strong {
+  font-family: var(--display);
+  font-size: 14px;
+  color: var(--ink);
+}
+.appt__passport-info span {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-soft);
+}
+.appt__passport-prompt {
+  background: var(--paper-2);
+  border: 1px dashed var(--line);
+  padding: 10px 14px;
+}
+.appt__passport-link {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--sans);
+  font-size: 13px;
+  color: var(--ink-soft);
+  text-align: left;
+  padding: 0;
+  transition: color 0.2s;
+  width: 100%;
+}
+.appt__passport-link:hover {
+  color: var(--maroon);
+}
+.appt__passport-link svg {
+  color: var(--gold);
+  flex-shrink: 0;
+}
+

@@ -1,0 +1,821 @@
+/* ========================================================= */
+/* MEHFIL BESPOKE MEASUREMENT PASSPORT DIALOG & INTERACTION  */
+/* ========================================================= */
+
+.passport-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(12px, 3vw, 32px);
+  overflow-y: auto;
+}
+
+.passport-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(22, 14, 11, 0.72);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  animation: fadeInBackdrop 0.3s var(--ease-out);
+}
+
+.passport-dialog {
+  position: relative;
+  width: 100%;
+  max-width: 1080px;
+  max-height: calc(100vh - clamp(24px, 5vw, 64px));
+  background: var(--paper);
+  border: 1px solid var(--line);
+  box-shadow: 0 24px 64px rgba(22, 14, 11, 0.35);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: scaleInDialog 0.35s var(--ease-drawer);
+}
+
+@keyframes fadeInBackdrop {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleInDialog {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Header */
+.passport-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem clamp(1rem, 3vw, 2rem);
+  border-bottom: 1px solid var(--line);
+  background: var(--paper-2);
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.passport-kicker {
+  display: block;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--gold);
+  margin-bottom: 0.2rem;
+}
+
+.passport-title {
+  margin: 0;
+  font-family: var(--display);
+  font-size: clamp(1.15rem, 2.2vw, 1.6rem);
+  font-weight: 400;
+  color: var(--ink);
+  line-height: 1.2;
+}
+
+.passport-title em {
+  font-family: var(--display-2);
+  font-style: italic;
+  font-weight: 400;
+}
+
+.passport-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.unit-toggle {
+  display: inline-flex;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  padding: 2px;
+}
+
+.unit-btn {
+  background: transparent;
+  border: none;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  padding: 6px 12px;
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: all 0.2s var(--ease-out);
+}
+
+.unit-btn.active {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.passport-close-btn {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--ink);
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s var(--ease-out);
+}
+
+.passport-close-btn:hover {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+/* Main Split Body */
+.passport-body {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+@media (max-width: 900px) {
+  .passport-body {
+    grid-template-columns: 1fr;
+    overflow-y: auto;
+  }
+}
+
+/* Left Column: Visual Silhouette */
+.passport-visual-col {
+  background: var(--paper-2);
+  border-right: 1px solid var(--line);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  overflow-y: auto;
+}
+
+.visual-footer {
+  width: 100%;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.progress-badge {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--ink-soft);
+}
+
+.progress-badge strong {
+  color: var(--gold);
+}
+
+.summary-switch-btn {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  padding: 0.65rem 1rem;
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--ink);
+  cursor: pointer;
+  transition: all 0.2s var(--ease-out);
+}
+
+.summary-switch-btn:hover {
+  background: var(--ink);
+  color: var(--paper);
+  border-color: var(--ink);
+}
+
+/* Right Column: Calibration Controls */
+.passport-editor-col {
+  padding: clamp(1rem, 2.5vw, 1.75rem);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  gap: 1.25rem;
+}
+
+/* Category Tabs */
+.category-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--line);
+  gap: 1.5rem;
+}
+
+.cat-tab {
+  background: transparent;
+  border: none;
+  padding: 0.5rem 0;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-soft);
+  cursor: pointer;
+  position: relative;
+  transition: color 0.2s var(--ease-out);
+}
+
+.cat-tab.active {
+  color: var(--maroon);
+  font-weight: 600;
+}
+
+.cat-tab.active::after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--maroon);
+}
+
+/* Point Chips */
+.point-chips {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+  scrollbar-width: thin;
+}
+
+.point-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--paper-2);
+  border: 1px solid var(--line);
+  padding: 6px 10px;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.2s var(--ease-out);
+}
+
+.point-chip .chip-no {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  opacity: 0.6;
+}
+
+.point-chip .chip-label {
+  font-weight: 500;
+}
+
+.point-chip .chip-val {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--gold);
+}
+
+.point-chip.active {
+  background: var(--ink);
+  color: var(--paper);
+  border-color: var(--ink);
+}
+
+.point-chip.active .chip-val {
+  color: var(--gold-soft);
+}
+
+/* Calibration Card */
+.calibration-card {
+  background: var(--paper-2);
+  border: 1px solid var(--line);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.calibration-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.point-seq {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  color: var(--gold);
+  letter-spacing: 0.08em;
+}
+
+.point-name {
+  margin: 0.2rem 0 0.35rem;
+  font-family: var(--display);
+  font-size: 1.35rem;
+  font-weight: 400;
+  color: var(--ink);
+}
+
+.point-desc {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--ink-soft);
+}
+
+.point-value-display {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  padding: 0.5rem 1rem;
+  min-width: 90px;
+}
+
+.value-digits {
+  font-family: var(--display);
+  font-size: 2rem;
+  line-height: 1;
+  color: var(--maroon);
+  font-variant-numeric: tabular-nums;
+}
+
+.value-unit {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+/* Slider */
+.slider-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.slider-row {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.nudge-btn {
+  width: 36px;
+  height: 36px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  font-size: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--ink);
+  transition: all 0.2s var(--ease-out);
+  flex-shrink: 0;
+}
+
+.nudge-btn:hover {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.range-input {
+  flex: 1;
+  accent-color: var(--gold);
+  height: 6px;
+  cursor: pointer;
+}
+
+.slider-bounds {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: var(--ink-soft);
+}
+
+/* Ghera Presets */
+.ghera-presets {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.75rem;
+}
+
+.ghera-btn {
+  text-align: left;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  padding: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s var(--ease-out);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.ghera-btn.active {
+  border-color: var(--gold);
+  background: #fbf5ea;
+  box-shadow: 0 0 0 1px var(--gold);
+}
+
+.ghera-label {
+  font-family: var(--display);
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.ghera-desc {
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  line-height: 1.4;
+}
+
+/* Guidance boxes */
+.guidance-box {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--line-soft);
+}
+
+@media (max-width: 640px) {
+  .guidance-box {
+    grid-template-columns: 1fr;
+  }
+}
+
+.guidance-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink);
+  margin-bottom: 0.35rem;
+  font-weight: 600;
+}
+
+.guidance-box p {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+
+.guidance-artisan {
+  background: rgba(185, 138, 61, 0.08);
+  border-left: 2px solid var(--gold);
+  padding: 0.65rem 0.85rem;
+}
+
+.guidance-instruction {
+  padding: 0.65rem 0.85rem;
+  background: var(--paper);
+  border: 1px solid var(--line-soft);
+}
+
+/* Footwear heel height box */
+.heel-box {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.heel-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.heel-select {
+  padding: 6px 10px;
+  background: var(--paper-2);
+  border: 1px solid var(--line);
+  font-family: var(--sans);
+  font-size: 0.82rem;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.heel-hint {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+}
+
+/* Footer Navigation */
+.passport-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: auto;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.nav-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--ink);
+  color: var(--paper);
+  border: none;
+  padding: 0.65rem 1.25rem;
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s var(--ease-out);
+}
+
+.nav-btn.prev {
+  background: var(--paper-2);
+  color: var(--ink);
+  border: 1px solid var(--line);
+}
+
+.nav-btn:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.nav-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.reset-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: transparent;
+  border: none;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--ink-soft);
+  cursor: pointer;
+  padding: 6px 10px;
+  transition: color 0.2s;
+}
+
+.reset-btn:hover {
+  color: var(--warn);
+}
+
+/* ========================================================= */
+/* CERTIFIED PASSPORT SUMMARY CARD VIEW                      */
+/* ========================================================= */
+
+.passport-summary-wrap {
+  padding: clamp(1rem, 3vw, 2rem);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.passport-card {
+  position: relative;
+  background: var(--paper);
+  border: 2px solid var(--gold);
+  padding: clamp(1.25rem, 3vw, 2.25rem);
+  box-shadow: inset 0 0 0 1px rgba(185, 138, 61, 0.4), 0 8px 32px rgba(22, 14, 11, 0.08);
+}
+
+.card-seal {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+  width: 88px;
+  height: 88px;
+  border: 1.5px dashed var(--gold);
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  transform: rotate(-10deg);
+  pointer-events: none;
+  opacity: 0.85;
+}
+
+.seal-text {
+  font-family: var(--display);
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  color: var(--maroon);
+  font-weight: 600;
+}
+
+.seal-sub {
+  font-family: var(--mono);
+  font-size: 0.52rem;
+  letter-spacing: 0.08em;
+  color: var(--gold);
+}
+
+.card-kicker {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--gold);
+}
+
+.card-title {
+  margin: 0.2rem 0;
+  font-family: var(--display);
+  font-size: clamp(1.4rem, 2.5vw, 1.85rem);
+  font-weight: 400;
+  color: var(--ink);
+}
+
+.card-subtitle {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+
+.client-input-wrap {
+  margin-top: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  max-width: 440px;
+}
+
+.client-input-wrap label {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  color: var(--ink);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.client-name-field {
+  flex: 1;
+  padding: 6px 12px;
+  border: 1px solid var(--line);
+  background: var(--paper-2);
+  font-family: var(--sans);
+  font-size: 0.9rem;
+  color: var(--ink);
+}
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1.75rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--line);
+}
+
+.spec-group {
+  background: var(--paper-2);
+  padding: 1.2rem;
+  border: 1px solid var(--line-soft);
+}
+
+.spec-title {
+  margin: 0 0 0.85rem;
+  font-family: var(--display);
+  font-size: 1.05rem;
+  color: var(--maroon);
+  font-weight: 500;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.spec-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.spec-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 0.82rem;
+}
+
+.spec-list li span {
+  color: var(--ink-soft);
+}
+
+.spec-list li strong {
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.notes-box {
+  margin-top: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.notes-box label {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.notes-textarea {
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--paper-2);
+  border: 1px solid var(--line);
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  color: var(--ink);
+  resize: vertical;
+}
+
+.card-footer-info {
+  margin-top: 1.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--line-soft);
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: var(--ink-soft);
+}
+
+/* Actions Bar */
+.summary-actions-bar {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.4rem;
+  font-family: var(--sans);
+  font-size: 0.88rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s var(--ease-out);
+  border: none;
+}
+
+.action-btn.primary {
+  background: var(--maroon);
+  color: var(--paper);
+}
+
+.action-btn.secondary {
+  background: var(--paper-2);
+  color: var(--ink);
+  border: 1px solid var(--line);
+}
+
+.action-btn:hover {
+  opacity: 0.92;
+  transform: translateY(-1px);
+}

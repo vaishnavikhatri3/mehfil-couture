@@ -422,3 +422,31 @@ body:has(.mmenu[data-open="true"]) .nav__cta {
   opacity: 0;
   pointer-events: none;
 }
+
+.nav__link--btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  font-family: inherit;
+}
+
+.mmenu__passport-btn {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--line-soft);
+  padding: 18px 0;
+  width: 100%;
+  font-family: var(--display);
+  font-size: 1.25rem;
+  color: var(--maroon);
+  cursor: pointer;
+  text-align: left;
+}
+.mmenu__passport-btn .mmenu__no {
+  color: var(--gold);
+}
+
