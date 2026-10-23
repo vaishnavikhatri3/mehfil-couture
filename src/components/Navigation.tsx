@@ -8,12 +8,14 @@ import { generalEnquiry, enquiryChannel } from "../lib/enquiry";
 import { track } from "../lib/analytics";
 import { useSectionLink } from "../hooks/useSectionLink";
 import { openPassport } from "../lib/passportBus";
+import { openTrousseau } from "../lib/trousseauBus";
 import { Img } from "./Img";
 import { InstagramIcon } from "./Icons";
 import "./Navigation.css";
 
-const LEFT = [
+const LEFT: { id: string; label: string; isTrousseau?: boolean }[] = [
   { id: "occasions", label: "Shop by Occasion" },
+  { id: "trousseau", label: "Trousseau", isTrousseau: true },
   { id: "studio", label: "Style Studio" },
 ];
 const RIGHT: { id: string; label: string; isPassport?: boolean }[] = [
@@ -134,11 +136,22 @@ export function Navigation() {
               <span className="nav__caret" aria-hidden="true" />
             </button>
           </div>
-          {LEFT.map((l) => (
-            <a key={l.id} href={`/#${l.id}`} className="nav__link" onClick={sectionClick(l.id)}>
-              {l.label}
-            </a>
-          ))}
+          {LEFT.map((l) =>
+            l.isTrousseau ? (
+              <button
+                key={l.id}
+                type="button"
+                className="nav__link nav__link--btn"
+                onClick={() => openTrousseau()}
+              >
+                {l.label}
+              </button>
+            ) : (
+              <a key={l.id} href={`/#${l.id}`} className="nav__link" onClick={sectionClick(l.id)}>
+                {l.label}
+              </a>
+            ),
+          )}
         </nav>
 
         <Link to="/" className="nav__mark" aria-label="Mehfil Couture — home" onClick={() => window.scrollTo({ top: 0 })}>
@@ -258,6 +271,18 @@ export function Navigation() {
             className="mmenu__passport-btn"
             onClick={() => {
               setMobile(false);
+              openTrousseau();
+            }}
+          >
+            <span className="mmenu__no">👑</span>
+            <span>Trousseau Concierge</span>
+          </button>
+
+          <button
+            type="button"
+            className="mmenu__passport-btn"
+            onClick={() => {
+              setMobile(false);
               openPassport();
             }}
           >
@@ -265,7 +290,7 @@ export function Navigation() {
             <span>Bespoke Measurement Passport</span>
           </button>
 
-          {[{ id: "collections", label: "Collections" }, ...LEFT, ...RIGHT.filter((r) => !r.isPassport), { id: "visit", label: "Visit the Studio" }].map((l, i) => (
+          {[{ id: "collections", label: "Collections" }, ...LEFT.filter((l) => !l.isTrousseau), ...RIGHT.filter((r) => !r.isPassport), { id: "visit", label: "Visit the Studio" }].map((l, i) => (
             <a
               key={l.id}
               href={`/#${l.id}`}
