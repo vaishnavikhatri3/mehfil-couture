@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
-import { RefreshCw } from "lucide-react";
-import { api, swatch } from "../../lib/api";
+import { AlertTriangle, RefreshCw } from "lucide-react";
+import { api, swatch, type Piece } from "../../lib/api";
 import { toast } from "../../lib/toast";
 import { DailyChart, HBars } from "./charts";
+import { STATUS_LABEL } from "./qr";
 import type { AdminCtx } from "./Admin";
 
 type Summary = {
+  qr: { tagged: number; scanned: number; inStock: number; reserved: number; sold: number; void: number; topPieces: Piece[]; flagged: Piece[] };
   totals: { scans: number; leads: number; conversion: number; designs: number; pieces: number; inStock: number; orders: number; demoLeads: number };
   colours: { label: string; value: number }[];
   sizes: { label: string; value: number }[];
@@ -47,7 +49,17 @@ export function Dashboard({ ctx }: { ctx: AdminCtx }) {
           <h1 className="ad__h1">What your QR tags are telling you</h1>
         </div>
         <div className="ad__head-actions">
-          <button type="button" className="ad__btn" onClick={load}><RefreshCw size={15} /> Refresh</button>
+          <button
+            type="button"
+            className="ad__btn"
+            onClick={(e) => {
+              if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches)
+                e.currentTarget.querySelector("svg")?.animate([{ transform: "rotate(0)" }, { transform: "rotate(360deg)" }], { duration: 600, easing: "cubic-bezier(0.77, 0, 0.175, 1)" });
+              load();
+            }}
+          >
+            <RefreshCw size={15} /> Refresh
+          </button>
           {t.demoLeads > 0 ? (
             <button type="button" className="ad__btn" onClick={() => demo("clear")}>Remove {t.demoLeads} sample leads</button>
           ) : (
@@ -63,6 +75,68 @@ export function Dashboard({ ctx }: { ctx: AdminCtx }) {
         <Kpi label="Scan → lead" value={`${t.conversion}%`} />
         <Kpi label="Pieces in stock" value={`${t.inStock} / ${t.pieces}`} sub="QR-tagged" />
         <Kpi label="FitCheck orders" value={t.orders} />
+      </section>
+
+      {s.qr.flagged.length > 0 && (
+        <section className="ad__card db__flags" aria-labelledby="flags-title">
+          <div className="ad__row">
+            <h2 id="flags-title" className="ad__h2"><AlertTriangle size={16} /> Tags that need a look · {s.qr.flagged.length}</h2>
+            <button type="button" className="ad__btn" onClick={() => ctx.go("pieces")}>Open Pieces</button>
+          </div>
+          <ul className="db__list">
+            {s.qr.flagged.slice(0, 5).map((p) => (
+              <li key={p.code}>
+                <button type="button" className="pcs__code" onClick={() => ctx.go("pieces", p.code)}>{p.code}</button>
+                <span>{p.flag}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      <section className="ad__card">
+        <div className="ad__row">
+          <h2 className="ad__h2">QR tags</h2>
+          <button type="button" className="ad__btn" onClick={() => ctx.go("pieces")}>All pieces</button>
+        </div>
+        {s.qr.tagged === 0 ? (
+          <p className="ad__empty">No tags yet. Generate a lot in the QR generator, print the labels, and the numbers start here.</p>
+        ) : (
+          <>
+            <div className="db__stock" role="img" aria-label={`${s.qr.inStock} in stock, ${s.qr.reserved} reserved, ${s.qr.sold} sold, ${s.qr.void} retired`}>
+              {(["inStock", "reserved", "sold", "void"] as const).map((k) =>
+                s.qr[k] ? <i key={k} className={`is-${k}`} style={{ flexGrow: s.qr[k] }} /> : null,
+              )}
+            </div>
+            <dl className="ad__mini db__mini">
+              <div><dt>Tagged</dt><dd>{s.qr.tagged}</dd></div>
+              <div><dt>Scanned once+</dt><dd>{Math.round((s.qr.scanned / s.qr.tagged) * 100)}%</dd></div>
+              <div><dt><i className="db__key is-inStock" />In stock</dt><dd>{s.qr.inStock}</dd></div>
+              <div><dt><i className="db__key is-reserved" />Reserved</dt><dd>{s.qr.reserved}</dd></div>
+              <div><dt><i className="db__key is-sold" />Sold</dt><dd>{s.qr.sold}</dd></div>
+              <div><dt><i className="db__key is-void" />Retired</dt><dd>{s.qr.void}</dd></div>
+            </dl>
+            {s.qr.topPieces.length > 0 && (
+              <div className="ad__table-wrap">
+                <table className="ad__table">
+                  <thead><tr><th>Most-scanned pieces</th><th>Status</th><th className="num">Scans</th><th className="num">Phones</th><th className="num">Leads</th></tr></thead>
+                  <tbody>
+                    {s.qr.topPieces.map((p) => (
+                      <tr key={p.code}>
+                        <td><button type="button" className="pcs__code" onClick={() => ctx.go("pieces", p.code)}>{p.code}</button><small>{p.designName} · {p.colour} · {p.size}</small></td>
+                        <td><span className={`pc__status is-${p.status}`}>{STATUS_LABEL[p.status]}</span></td>
+                        <td className="num">{p.scans}</td>
+                        <td className="num">{p.devices}</td>
+                        <td className="num">{p.leads}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            <p className="note">A piece scanned by many phones but still on the rack is being looked at, not bought. Try it on a mannequin or move it near the trial room.</p>
+          </>
+        )}
       </section>
 
       <section className="ad__card">
@@ -119,7 +193,8 @@ function Kpi({ label, value, sub }: { label: string; value: string | number; sub
   return (
     <div className="ad__kpi">
       <span className="label">{label}</span>
-      <b>{value}</b>
+      {/* Keyed so a changed number softly swaps in after Refresh */}
+      <b key={value}>{value}</b>
       {sub && <small>{sub}</small>}
     </div>
   );

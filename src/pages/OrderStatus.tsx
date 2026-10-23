@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowRight, MessageCircle } from "lucide-react";
+import { ArrowRight, Check, MessageCircle } from "lucide-react";
 import { api, type Order } from "../lib/api";
 import { usePageMeta } from "../hooks/usePageMeta";
 import "./FitCheck.css";
@@ -65,8 +65,8 @@ export default function OrderStatus() {
           const now = s.key === order.status;
           const at = order.timeline.filter((t) => t.step === s.key).pop()?.at;
           return (
-            <li key={s.key} className={`${done ? "is-done" : ""} ${now ? "is-now" : ""}`}>
-              <span className="os__dot" aria-hidden="true" />
+            <li key={s.key} className={`${done ? "is-done" : ""} ${now ? "is-now" : ""}`} style={{ "--i": i } as React.CSSProperties}>
+              <span className="os__dot" aria-hidden="true">{done && !now && <Check size={14} strokeWidth={3} />}</span>
               <div>
                 <b>{s.label}</b>
                 <p>{s.detail}</p>

@@ -17,6 +17,7 @@
 .camp__veil {
   position: absolute;
   inset: 0;
+  pointer-events: none; /* decorative — lets the photo underneath take hover/tap */
   background:
     linear-gradient(to top, rgba(20, 10, 8, 0.86) 0%, rgba(20, 10, 8, 0.35) 45%, rgba(20, 10, 8, 0.1) 100%),
     linear-gradient(to right, rgba(20, 10, 8, 0.55), transparent 60%);

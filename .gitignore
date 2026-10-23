@@ -6,3 +6,5 @@ dist
 *.tsbuildinfo
 data/
 *.traineddata
+ml/.venv/
+__pycache__/

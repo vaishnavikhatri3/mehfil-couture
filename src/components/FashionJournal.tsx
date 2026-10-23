@@ -54,7 +54,7 @@ export function FashionJournal() {
                     </span>
                   </span>
                   <span className="jr__thumb frame">
-                    <Img photo={a.image} sizes="120px" />
+                    <Img photo={a.image} sizes="120px" zoom={false} />
                   </span>
                   <ArrowUpRight className="jr__arrow" size={18} />
                 </Link>

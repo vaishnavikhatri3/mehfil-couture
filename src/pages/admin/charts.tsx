@@ -13,7 +13,8 @@ export function HBars({ data, empty, swatches }: { data: { label: string; value:
             {d.label}
           </span>
           <span className="hb__track">
-            <span className="hb__bar" style={{ width: `${(d.value / max) * 100}%` }} />
+            {/* Full-width bar clipped to its value: a data change glides instead of jumping */}
+            <span className="hb__bar" style={{ clipPath: `inset(0 calc(100% - max(2px, ${(d.value / max) * 100}%)) 0 0 round 0 4px 4px 0)` }} />
           </span>
           <span className="hb__value">{d.value}</span>
         </li>

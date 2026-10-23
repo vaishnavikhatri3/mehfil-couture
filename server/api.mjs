@@ -53,10 +53,25 @@ CREATE TABLE IF NOT EXISTS orders (
 CREATE TABLE IF NOT EXISTS size_charts (
   id TEXT PRIMARY KEY, name TEXT, region TEXT, unit TEXT, rows TEXT, source TEXT,
   is_sample INTEGER DEFAULT 0, created_at TEXT);
+CREATE TABLE IF NOT EXISTS piece_events (
+  id INTEGER PRIMARY KEY AUTOINCREMENT, code TEXT NOT NULL, at TEXT, action TEXT, detail TEXT);
 CREATE INDEX IF NOT EXISTS idx_pieces_design ON pieces(design_id);
 CREATE INDEX IF NOT EXISTS idx_scans_design ON scans(design_id);
+CREATE INDEX IF NOT EXISTS idx_scans_code ON scans(code);
 CREATE INDEX IF NOT EXISTS idx_leads_design ON leads(design_id);
+CREATE INDEX IF NOT EXISTS idx_events_code ON piece_events(code);
 `;
+
+// Columns added after the first release; existing databases get them on start.
+const MIGRATIONS = [
+  ["scans", "device", "TEXT"],
+  ["pieces", "sold_at", "TEXT"],
+  ["pieces", "note", "TEXT"],
+];
+
+const PIECE_STATUSES = ["in_stock", "reserved", "sold", "void"];
+// A sold tag scanned from more phones than this in 30 days may have been copied.
+const CLONE_DEVICES = 6;
 
 // ── Seeds: clearly labelled samples the studio replaces ──
 const SAMPLE_DESIGNS = [
@@ -93,11 +108,17 @@ const SAMPLE_CHART = {
   ],
 };
 
-export function createApi({ dbPath = "data/mehfil.db", adminPasscode = process.env.ADMIN_PASSCODE || "mehfil-admin-2026" } = {}) {
+export function createApi({
+  dbPath = "data/mehfil.db",
+  adminPasscode = process.env.ADMIN_PASSCODE || "mehfil-admin-2026",
+  mlUrl = process.env.ML_SERVICE_URL || "http://127.0.0.1:8001",
+} = {}) {
   if (dbPath !== ":memory:") mkdirSync(dirname(dbPath), { recursive: true });
   const db = new DatabaseSync(dbPath);
   db.exec("PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;");
   db.exec(SCHEMA);
+  for (const [table, col, type] of MIGRATIONS)
+    if (!db.prepare(`PRAGMA table_info(${table})`).all().some((c) => c.name === col)) db.exec(`ALTER TABLE ${table} ADD COLUMN ${col} ${type}`);
   seed(db);
 
   const sessions = new Map(); // token -> expiry ms
@@ -149,13 +170,83 @@ export function createApi({ dbPath = "data/mehfil.db", adminPasscode = process.e
     };
   }
 
+  // ── pieces: lifecycle history, scan stats, copy / retired-tag flags ──
+  const logEvent = (code, action, detail = null) =>
+    q("INSERT INTO piece_events (code, at, action, detail) VALUES (?,?,?,?)").run(code, now(), action, detail);
+
+  /** What the customer's passport may say about this tag. Scan counts stay in the portal. */
+  const verification = (piece) => {
+    if (!piece) return { kind: "design" };
+    if (piece.status === "void") return { kind: "void" };
+    return { kind: "genuine", soldAt: piece.status === "sold" ? (piece.sold_at || piece.updated_at || "").slice(0, 10) : null };
+  };
+
+  const flagOf = (p) =>
+    p.status === "void" && p.after_void > 0
+      ? "Retired tag is still being scanned"
+      : p.status === "sold" && p.devices30 > CLONE_DEVICES
+        ? `Sold tag scanned on ${p.devices30} phones in 30 days — it may have been copied`
+        : null;
+
+  const pieceOut = (p) => ({
+    code: p.code, designId: p.design_id, designName: p.design_name, lotId: p.lot_id, colour: p.colour, size: p.size,
+    status: p.status, note: p.note || "", soldAt: p.sold_at, createdAt: p.created_at, updatedAt: p.updated_at,
+    scans: p.scans, devices: p.devices, lastScanAt: p.last_scan, leads: p.leads, flag: flagOf(p),
+  });
+
+  function listPieces({ status, design, lot, search, codes } = {}) {
+    const where = [];
+    const args = [new Date(Date.now() - 30 * 86400000).toISOString()];
+    if (status) (where.push("p.status = ?"), args.push(status));
+    if (design) (where.push("p.design_id = ?"), args.push(design));
+    if (lot) (where.push("p.lot_id = ?"), args.push(lot));
+    if (search) (where.push("(p.code LIKE ? OR d.name LIKE ? OR p.colour LIKE ? OR p.note LIKE ?)"), args.push(...Array(4).fill(`%${search}%`)));
+    if (codes) (where.push(`p.code IN (${codes.map(() => "?").join(",") || "''"})`), args.push(...codes));
+    return q(`SELECT p.*, d.name design_name,
+                COUNT(s.id) scans, COUNT(DISTINCT s.device) devices, MAX(s.at) last_scan,
+                COUNT(DISTINCT CASE WHEN s.at >= ? THEN s.device END) devices30,
+                SUM(CASE WHEN p.status = 'void' AND s.at > p.updated_at THEN 1 ELSE 0 END) after_void,
+                (SELECT COUNT(*) FROM leads l WHERE l.piece_code = p.code) leads
+              FROM pieces p JOIN designs d ON d.id = p.design_id LEFT JOIN scans s ON s.code = p.code
+              ${where.length ? "WHERE " + where.join(" AND ") : ""}
+              GROUP BY p.code ORDER BY p.created_at DESC, p.design_id, p.colour, p.size, p.code LIMIT 5000`)
+      .all(...args)
+      .map(pieceOut);
+  }
+
+  function setPieceStatus(code, status, note) {
+    const p = q("SELECT * FROM pieces WHERE code = ?").get(code);
+    if (!p) throw new HttpError(404, `No piece with code ${code}.`);
+    if (p.status === status) return false;
+    const at = now();
+    const soldAt = status === "sold" ? at : null;
+    q("UPDATE pieces SET status = ?, sold_at = ?, updated_at = ? WHERE code = ?").run(status, soldAt, at, code);
+    logEvent(code, p.status === "sold" && status === "in_stock" ? "returned" : status, note || null);
+    return true;
+  }
+
   // ── routes ──
   const routes = [];
-  const route = (method, pattern, fn) => {
+  const route = (method, pattern, fn, maxBody = MAX_BODY) => {
     const keys = [];
     const re = new RegExp("^" + pattern.replace(/:(\w+)/g, (_, k) => (keys.push(k), "([^/]+)")) + "$");
-    routes.push({ method, re, keys, fn });
+    routes.push({ method, re, keys, fn, maxBody });
   };
+
+  // Python ML service (ml/app.py): Isolation Forest + PaddleOCR. Optional — the site falls back when it's down.
+  async function ml(path, payload, timeoutMs) {
+    let res;
+    try {
+      res = await fetch(mlUrl + path, {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload), signal: AbortSignal.timeout(timeoutMs),
+      });
+    } catch {
+      throw new HttpError(503, "The measurement assistant is offline right now.");
+    }
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new HttpError(res.status === 400 ? 400 : 503, data.detail || "The measurement assistant couldn't handle that.");
+    return data;
+  }
 
   // Public
   route("GET", "/api/health", () => ({ ok: true, at: now() }));
@@ -168,6 +259,7 @@ export function createApi({ dbPath = "data/mehfil.db", adminPasscode = process.e
     return {
       design,
       piece: piece ? { code: piece.code, colour: piece.colour, size: piece.size, status: piece.status } : null,
+      verification: verification(piece),
       availability: availability(design.id),
     };
   });
@@ -177,8 +269,12 @@ export function createApi({ dbPath = "data/mehfil.db", adminPasscode = process.e
     const piece = q("SELECT design_id FROM pieces WHERE code = ?").get(code);
     const design = q("SELECT id FROM designs WHERE id = ?").get(piece ? piece.design_id : code);
     if (!design) throw new HttpError(404, "Unknown code.");
-    q("INSERT INTO scans (code, design_id, at) VALUES (?, ?, ?)").run(code, design.id, now());
-    return { ok: true };
+    // Anonymous random id the passport keeps on the phone — counts distinct phones, identifies no one
+    const device = /^[A-Za-z0-9_-]{8,40}$/.test(String(body.device || "")) ? String(body.device) : null;
+    if (device && q("SELECT 1 FROM scans WHERE code = ? AND device = ? AND at > ?").get(code, device, new Date(Date.now() - 30 * 60000).toISOString()))
+      return { ok: true, counted: false };
+    q("INSERT INTO scans (code, design_id, at, device) VALUES (?, ?, ?, ?)").run(code, design.id, now(), device);
+    return { ok: true, counted: true };
   });
 
   route("POST", "/api/leads", ({ body, ip }) => {
@@ -225,6 +321,18 @@ export function createApi({ dbPath = "data/mehfil.db", adminPasscode = process.e
       id: c.id, name: c.name, region: c.region, unit: c.unit, rows: pj(c.rows, []), isSample: !!c.is_sample,
     })),
   }));
+
+  // FitCheck ML: whole-set anomaly check (inches) and tailor-card OCR. Images are read in memory, never stored.
+  route("POST", "/api/fitcheck/anomaly", ({ body }) => {
+    const inches = Object.fromEntries(
+      Object.entries(body.inches || {}).filter(([k, v]) => /^[a-zA-Z]{2,20}$/.test(k) && Number.isFinite(v) && v > 0 && v < 120),
+    );
+    return ml("/anomaly", { inches }, 4000);
+  });
+  route("POST", "/api/fitcheck/ocr", ({ body }) => {
+    if (typeof body.image !== "string" || !body.image.startsWith("data:image/")) throw new HttpError(400, "Send the card as an image.");
+    return ml("/ocr", { image: body.image }, 90000); // first call loads the PaddleOCR models
+  }, 6 * 1024 * 1024);
 
   // FitCheck orders (customer side) — id is unguessable, acts as the resume link
   route("POST", "/api/orders", ({ body }) => {
@@ -286,7 +394,15 @@ export function createApi({ dbPath = "data/mehfil.db", adminPasscode = process.e
       });
     }
     const scans = count("SELECT COUNT(*) n FROM scans");
+    const pieces = listPieces();
+    const byStatus = (s) => pieces.filter((p) => p.status === s).length;
     return {
+      qr: {
+        tagged: pieces.length, scanned: pieces.filter((p) => p.scans > 0).length,
+        inStock: byStatus("in_stock"), reserved: byStatus("reserved"), sold: byStatus("sold"), void: byStatus("void"),
+        topPieces: pieces.filter((p) => p.scans > 0).sort((a, b) => b.scans - a.scans).slice(0, 6),
+        flagged: pieces.filter((p) => p.flag),
+      },
       totals: {
         scans, leads: leads.length, conversion: scans ? Math.round((leads.length / scans) * 100) : 0,
         designs: count("SELECT COUNT(*) n FROM designs"), pieces: count("SELECT COUNT(*) n FROM pieces"),
@@ -383,6 +499,7 @@ export function createApi({ dbPath = "data/mehfil.db", adminPasscode = process.e
           do code = `${design.id}-${randomBytes(3).toString("hex").toUpperCase()}`;
           while (q("SELECT 1 FROM pieces WHERE code = ?").get(code));
           ins.run(code, design.id, lotId, l.colour, l.size, at, at);
+          logEvent(code, "created", lotId);
           codes.push({ code, colour: l.colour, size: l.size });
         }
       }
@@ -416,18 +533,80 @@ export function createApi({ dbPath = "data/mehfil.db", adminPasscode = process.e
 
   route("DELETE", "/api/admin/lots/:id", ({ req, params }) => {
     requireAdmin(req);
+    // Sold pieces are in customers' hands — their passports must keep opening
+    const sold = q("SELECT COUNT(*) n FROM pieces WHERE lot_id = ? AND status = 'sold'").get(params.id).n;
+    if (sold) throw new HttpError(409, `${sold} piece${sold > 1 ? "s" : ""} in this lot ${sold > 1 ? "are" : "is"} sold, so the lot can't be deleted. Retire unused tags from Pieces instead.`);
+    q("DELETE FROM piece_events WHERE code IN (SELECT code FROM pieces WHERE lot_id = ?)").run(params.id);
     q("DELETE FROM pieces WHERE lot_id = ?").run(params.id);
     q("DELETE FROM lots WHERE id = ?").run(params.id);
     return { ok: true };
   });
 
+  route("GET", "/api/admin/pieces", ({ req, query }) => {
+    requireAdmin(req);
+    const status = PIECE_STATUSES.includes(query.get("status")) ? query.get("status") : null;
+    return {
+      pieces: listPieces({
+        status, design: query.get("design") || null, lot: query.get("lot") || null, search: (query.get("q") || "").trim().slice(0, 60) || null,
+      }),
+    };
+  });
+
+  route("GET", "/api/admin/pieces/:code", ({ req, params }) => {
+    requireAdmin(req);
+    const code = params.code.toUpperCase();
+    const [piece] = listPieces({ codes: [code] });
+    if (!piece) {
+      if (q("SELECT 1 FROM designs WHERE id = ?").get(code)) throw new HttpError(404, `${code} is a design code, not a piece tag. Piece tags look like ${code}-4F2A9C.`);
+      throw new HttpError(404, `No piece with code ${code}. Check the tag, or whether its lot was deleted.`);
+    }
+    const lot = q("SELECT id, note, created_at FROM lots WHERE id = ?").get(piece.lotId);
+    return {
+      piece,
+      lot: lot && { id: lot.id, note: lot.note, createdAt: lot.created_at },
+      events: q("SELECT at, action, detail FROM piece_events WHERE code = ? ORDER BY at, id").all(code),
+      scans: q("SELECT at, device FROM scans WHERE code = ? ORDER BY at DESC LIMIT 100").all(code)
+        .map((s) => ({ at: s.at, device: s.device ? s.device.slice(0, 6) : null })),
+      leads: q("SELECT * FROM leads WHERE piece_code = ? ORDER BY created_at DESC").all(code).map(leadOut),
+    };
+  });
+
   route("PATCH", "/api/admin/pieces/:code", ({ req, params, body }) => {
     requireAdmin(req);
-    const status = ["in_stock", "reserved", "sold"].includes(body.status) ? body.status : null;
-    if (!status) throw new HttpError(400, "Status must be in_stock, reserved or sold.");
-    const r = q("UPDATE pieces SET status = ?, updated_at = ? WHERE code = ?").run(status, now(), params.code.toUpperCase());
-    if (!r.changes) throw new HttpError(404, "Piece not found.");
-    return { ok: true };
+    const code = params.code.toUpperCase();
+    if (!q("SELECT 1 FROM pieces WHERE code = ?").get(code)) throw new HttpError(404, "Piece not found.");
+    if (body.status !== undefined) {
+      if (!PIECE_STATUSES.includes(body.status)) throw new HttpError(400, "Status must be in_stock, reserved, sold or void.");
+      setPieceStatus(code, body.status, body.reason ? String(body.reason).slice(0, 200) : null);
+    }
+    if (body.note !== undefined) {
+      const note = String(body.note || "").trim().slice(0, 300);
+      q("UPDATE pieces SET note = ?, updated_at = ? WHERE code = ?").run(note, now(), code);
+      logEvent(code, "note", note || "(cleared)");
+    }
+    return { piece: listPieces({ codes: [code] })[0] };
+  });
+
+  route("POST", "/api/admin/pieces/bulk", ({ req, body }) => {
+    requireAdmin(req);
+    if (!PIECE_STATUSES.includes(body.status)) throw new HttpError(400, "Status must be in_stock, reserved, sold or void.");
+    const codes = Array.from(new Set((Array.isArray(body.codes) ? body.codes : []).map((c) => String(c).toUpperCase().slice(0, 40))));
+    if (!codes.length) throw new HttpError(400, "Select at least one piece.");
+    if (codes.length > 1000) throw new HttpError(400, "Change at most 1,000 pieces at a time.");
+    let changed = 0;
+    const missing = [];
+    db.exec("BEGIN");
+    try {
+      for (const c of codes) {
+        if (!q("SELECT 1 FROM pieces WHERE code = ?").get(c)) missing.push(c);
+        else if (setPieceStatus(c, body.status, body.reason ? String(body.reason).slice(0, 200) : null)) changed++;
+      }
+      db.exec("COMMIT");
+    } catch (e) {
+      db.exec("ROLLBACK");
+      throw e;
+    }
+    return { changed, missing };
   });
 
   route("GET", "/api/admin/leads", ({ req }) => {
@@ -508,7 +687,7 @@ export function createApi({ dbPath = "data/mehfil.db", adminPasscode = process.e
       if (!r) throw new HttpError(404, "Not found.");
       const m = url.pathname.match(r.re);
       const params = Object.fromEntries(r.keys.map((k, i) => [k, decodeURIComponent(m[i + 1])]));
-      const body = ["POST", "PUT", "PATCH"].includes(method) ? await readJson(req) : {};
+      const body = ["POST", "PUT", "PATCH"].includes(method) ? await readJson(req, r.maxBody) : {};
       const ip = req.headers["x-forwarded-for"]?.split(",")[0].trim() || req.socket?.remoteAddress || "local";
       const out = await r.fn({ req, params, body, query: url.searchParams, ip });
       send(res, 200, out);
@@ -529,13 +708,13 @@ function send(res, status, data) {
 function notFound(res) {
   send(res, 404, { error: "Not found." });
 }
-function readJson(req) {
+function readJson(req, maxBody = MAX_BODY) {
   return new Promise((resolve, reject) => {
     let size = 0;
     const chunks = [];
     req.on("data", (c) => {
       size += c.length;
-      if (size > MAX_BODY) {
+      if (size > maxBody) {
         reject(new HttpError(413, "Request too large."));
         req.destroy();
       } else chunks.push(c);

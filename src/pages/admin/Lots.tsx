@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
-import { Download, Eye, Plus, Printer, Trash2, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Boxes, Eye, Plus, Trash2, X } from "lucide-react";
 import { api, type Design } from "../../lib/api";
 import { toast } from "../../lib/toast";
-import { downloadDataUrl, passportUrl, qrBase, qrDataUrl } from "./qr";
+import { passportUrl, qrBase } from "./qr";
+import { LabelSheet } from "./LabelSheet";
 import type { AdminCtx } from "./Admin";
 
 type Lot = { id: string; designId: string; designName: string; note: string; quantity: number; inStock?: number; createdAt: string };
@@ -12,7 +13,7 @@ type Line = { colour: string; size: string; qty: string };
 export function Lots({ ctx }: { ctx: AdminCtx }) {
   const [designs, setDesigns] = useState<Design[]>([]);
   const [lots, setLots] = useState<Lot[] | null>(null);
-  const [designId, setDesignId] = useState(ctx.presetDesign || "");
+  const [designId, setDesignId] = useState(ctx.preset || "");
   const [lines, setLines] = useState<Line[]>([{ colour: "", size: "", qty: "1" }]);
   const [note, setNote] = useState("");
   const [err, setErr] = useState("");
@@ -42,6 +43,7 @@ export function Lots({ ctx }: { ctx: AdminCtx }) {
   }, [designId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const total = lines.reduce((s, l) => s + (parseInt(l.qty) || 0), 0);
+  const labels = useMemo(() => sheet && sheet.pieces.map((p) => ({ ...p, designName: sheet.lot.designName })), [sheet]);
 
   async function generate(e: React.FormEvent) {
     e.preventDefault();
@@ -103,7 +105,8 @@ export function Lots({ ctx }: { ctx: AdminCtx }) {
           <li><b>Each piece gets a unique code</b> like <code>{designId || "MC-BR-001"}-4F2A9C</code>, saved as “in stock”.</li>
           <li><b>The QR encodes</b> <code>{passportUrl("CODE")}</code> — scanning opens the digital passport.</li>
           <li><b>The passport</b> shows the embroidery story, live sizes &amp; colours, and asks for the 5 details — only with an unticked consent box.</li>
-          <li><b>Print the label sheet</b>, stitch or hang a tag on each piece, and mark pieces reserved or sold as they move.</li>
+          <li><b>Print the label sheet</b> (A4, hang tags or stickers), stitch or hang a tag on each piece.</li>
+          <li><b>As pieces move</b>, scan the tag in <b>Scan tags</b> to mark it sold or reserved — the passport then shows the customer it's a genuine piece and when it was sold.</li>
         </ol>
         <label className="field ad__base">
           <span>QR links point to</span>
@@ -128,7 +131,7 @@ export function Lots({ ctx }: { ctx: AdminCtx }) {
         </div>
         <div className="ad__lines">
           {lines.map((l, i) => (
-            <div key={i} className="ad__line">
+            <div key={i} className="ad__line ad__enter">
               <label className="field">
                 <span>Colour</span>
                 <select className="input" value={l.colour} onChange={(e) => setLines(lines.map((x, j) => (j === i ? { ...x, colour: e.target.value } : x)))}>
@@ -157,7 +160,7 @@ export function Lots({ ctx }: { ctx: AdminCtx }) {
         <button type="submit" className="btn" disabled={busy || !designId || total < 1}>{busy ? "Generating…" : `Generate ${total} QR codes`}</button>
       </form>
 
-      {sheet && <LotSheet sheet={sheet} onClose={() => setSheet(null)} ctx={ctx} />}
+      {sheet && labels && <LabelSheet title={`${sheet.lot.id} · ${sheet.lot.designName}`} pieces={labels} onClose={() => setSheet(null)} ctx={ctx} />}
 
       <section className="ad__card">
         <h2 className="ad__h2">Lots</h2>
@@ -179,6 +182,7 @@ export function Lots({ ctx }: { ctx: AdminCtx }) {
                     <td>{new Date(l.createdAt).toLocaleDateString("en-IN", { dateStyle: "medium" })}</td>
                     <td className="ad__acts">
                       <button type="button" className="ad__btn" onClick={() => openSheet(l.id)}><Eye size={15} /> Label sheet</button>
+                      <button type="button" className="ad__btn" onClick={() => ctx.go("pieces", `lot:${l.id}`)}><Boxes size={15} /> Pieces</button>
                       {confirmDel === l.id ? (
                         <>
                           <button type="button" className="ad__btn ad__btn--danger" onClick={() => delLot(l.id)}>Delete {l.quantity} codes</button>
@@ -196,77 +200,5 @@ export function Lots({ ctx }: { ctx: AdminCtx }) {
         )}
       </section>
     </div>
-  );
-}
-
-function LotSheet({ sheet, onClose, ctx }: { sheet: { lot: Lot; pieces: Piece[] }; onClose: () => void; ctx: AdminCtx }) {
-  const [qrs, setQrs] = useState<Record<string, string>>({});
-  const [pieces, setPieces] = useState(sheet.pieces);
-  useEffect(() => {
-    setPieces(sheet.pieces);
-    let alive = true;
-    Promise.all(sheet.pieces.map(async (p) => [p.code, await qrDataUrl(p.code, 300)] as const)).then((all) => alive && setQrs(Object.fromEntries(all)));
-    return () => {
-      alive = false;
-    };
-  }, [sheet]);
-
-  async function setStatus(code: string, status: string) {
-    try {
-      await api(`/api/admin/pieces/${code}`, { method: "PATCH", admin: true, body: { status } });
-      setPieces((ps) => ps.map((p) => (p.code === code ? { ...p, status } : p)));
-    } catch (e) {
-      ctx.onAuthError(e);
-      toast((e as Error).message);
-    }
-  }
-
-  return (
-    <section className="ad__card lotsheet">
-      <div className="ad__row no-print">
-        <div>
-          <span className="label">Label sheet</span>
-          <h2 className="ad__h2">{sheet.lot.id} · {sheet.lot.designName}</h2>
-        </div>
-        <div className="ad__acts">
-          <button
-            type="button"
-            className="btn"
-            onClick={() => {
-              document.body.classList.add("printing-labels");
-              window.print();
-              window.setTimeout(() => document.body.classList.remove("printing-labels"), 500);
-            }}
-          >
-            <Printer /> Print labels
-          </button>
-          <button type="button" className="ad__icon" aria-label="Close label sheet" onClick={onClose}><X size={18} /></button>
-        </div>
-      </div>
-      <div className="lotsheet__grid">
-        {pieces.map((p) => (
-          <div key={p.code} className="tag">
-            {qrs[p.code] ? <img src={qrs[p.code]} alt={`QR ${p.code}`} /> : <span className="tag__ph" />}
-            <div className="tag__txt">
-              <b>Mehfil Couture</b>
-              <span>{sheet.lot.designName}</span>
-              <span>{p.colour} · {p.size}</span>
-              <code>{p.code}</code>
-              <small>Scan for the story &amp; sizes</small>
-            </div>
-            <div className="tag__ctl no-print">
-              <select className="input" value={p.status} onChange={(e) => setStatus(p.code, e.target.value)} aria-label={`Status of ${p.code}`}>
-                <option value="in_stock">In stock</option>
-                <option value="reserved">Reserved</option>
-                <option value="sold">Sold</option>
-              </select>
-              {qrs[p.code] && (
-                <button type="button" className="ad__icon" aria-label={`Download QR ${p.code}`} onClick={() => downloadDataUrl(qrs[p.code], `${p.code}.png`)}><Download size={16} /></button>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-    </section>
   );
 }

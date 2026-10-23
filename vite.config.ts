@@ -10,6 +10,7 @@ function fitcheckApi(env: Record<string, string>): Plugin {
     api ??= createApi({
       dbPath: env.DB_PATH || "data/mehfil.db",
       ...(env.ADMIN_PASSCODE ? { adminPasscode: env.ADMIN_PASSCODE } : {}),
+      ...(env.ML_SERVICE_URL ? { mlUrl: env.ML_SERVICE_URL } : {}),
     });
     server.middlewares.use(api);
   };

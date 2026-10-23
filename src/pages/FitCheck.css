@@ -558,6 +558,20 @@
   background: var(--maroon);
   transition: width 200ms linear;
 }
+.fc__bar.is-busy {
+  overflow: hidden;
+}
+.fc__bar.is-busy i {
+  width: 35%;
+  animation: fc-busy 1.2s ease-in-out infinite;
+}
+@keyframes fc-busy {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(290%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fc__bar.is-busy i { animation: none; width: 100%; opacity: 0.5; }
+}
 .fc__ocr-rows {
   display: grid;
   gap: 8px;
@@ -692,12 +706,223 @@
   font-size: 14px;
 }
 
+.fc__reguide {
+  justify-self: start;
+  margin-top: 6px;
+  font-size: 13.5px;
+}
+
+/* Visual measuring guide (step 1) */
+.mw {
+  display: grid;
+  gap: 22px;
+}
+.mw__stage {
+  display: grid;
+  grid-template-columns: minmax(0, 4fr) minmax(0, 7fr);
+  gap: clamp(24px, 5vw, 72px);
+  align-items: center;
+  padding: clamp(20px, 3vw, 40px);
+  background: var(--paper-2);
+  border: 1px solid var(--line-soft);
+  min-height: 460px;
+}
+.mw__figure {
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+.mw__figure .mg {
+  max-height: 420px;
+}
+.mw__count {
+  position: absolute;
+  top: 0;
+  left: 0;
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  color: var(--ink-soft);
+}
+.mw__copy {
+  display: grid;
+  gap: 14px;
+  align-content: center;
+  animation: mw-in 360ms var(--ease-out) backwards;
+}
+.mw__h {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 330;
+  font-size: clamp(2rem, 4vw, 3.2rem);
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+  outline: none;
+}
+.mw__h em {
+  color: var(--maroon);
+}
+.mw__h i {
+  font-family: var(--display-2);
+  font-size: 0.6em;
+  font-weight: 400;
+  color: var(--ink-soft);
+  letter-spacing: 0;
+}
+.mw__lede,
+.mw__how {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.55;
+}
+.mw__how {
+  font-family: var(--display-2);
+  font-size: clamp(1.3rem, 2vw, 1.6rem);
+  line-height: 1.35;
+}
+.mw__tip,
+.mw__avoid {
+  margin: 0;
+  display: grid;
+  grid-template-columns: 20px 1fr;
+  gap: 10px;
+  align-items: start;
+  padding: 12px 14px;
+  font-size: 15px;
+  line-height: 1.5;
+}
+.mw__tip {
+  background: var(--sage-tint);
+}
+.mw__tip svg {
+  color: #3f6b3a;
+  margin-top: 2px;
+}
+.mw__avoid {
+  background: var(--warn-tint);
+}
+.mw__avoid svg {
+  color: var(--warn);
+  margin-top: 2px;
+}
+.mw__garment {
+  max-width: 320px;
+}
+.mw__prep {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.mw__prep li {
+  display: grid;
+  grid-template-columns: 20px 1fr;
+  gap: 10px;
+  font-size: 15px;
+  line-height: 1.5;
+}
+.mw__prep svg {
+  color: var(--maroon);
+  margin-top: 3px;
+}
+.mw__start {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 18px;
+}
+.mw__nav {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 16px;
+  align-items: center;
+}
+.mw__next {
+  min-width: 1px;
+}
+.mw__dots {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px;
+}
+.mw__dots button {
+  position: relative;
+  width: 24px;
+  height: 24px;
+}
+.mw__dots button::before {
+  content: "";
+  position: absolute;
+  inset: 8px;
+  border-radius: 50%;
+  background: var(--line);
+  transition:
+    background-color 200ms ease,
+    transform 200ms var(--ease-out);
+}
+.mw__dots button[data-done]::before {
+  background: var(--sage);
+}
+.mw__dots button[aria-current="step"]::before {
+  background: var(--maroon);
+  transform: scale(1.5);
+}
+.mw__skip {
+  margin: 0;
+  text-align: center;
+  font-size: 14px;
+}
+@keyframes mw-in {
+  from {
+    opacity: 0;
+    transform: translateX(10px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mw__copy {
+    animation-name: mw-fade;
+  }
+  @keyframes mw-fade {
+    from {
+      opacity: 0;
+    }
+  }
+}
+
 @media (max-width: 960px) {
   .fc__grid {
     grid-template-columns: 1fr;
   }
   .fc__side {
     position: static;
+  }
+  .mw__stage {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+    min-height: 0;
+  }
+}
+@media (max-width: 640px) {
+  .mw__stage {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .mw__figure .mg {
+    max-height: 220px;
+  }
+  .mw__nav {
+    grid-template-columns: 1fr 1fr;
+  }
+  .mw__dots {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+  .mw__next {
+    justify-self: end;
   }
 }
 @media (max-width: 600px) {

@@ -58,6 +58,20 @@ export type Lead = {
   mobile: string; size: string; location: { method: "gps" | "manual"; lat: number | null; lng: number | null; accuracy: number | null; text: string | null };
   colours: string[]; consent: boolean; consentText: string | null; consentAt: string; status: "new" | "contacted"; isDemo: boolean; createdAt: string;
 };
+export type PieceStatus = "in_stock" | "reserved" | "sold" | "void";
+export type Piece = {
+  code: string; designId: string; designName: string; lotId: string | null; colour: string; size: string; status: PieceStatus; note: string;
+  soldAt: string | null; createdAt: string; updatedAt: string; scans: number; devices: number; lastScanAt: string | null; leads: number; flag: string | null;
+};
+export type PieceDetail = {
+  piece: Piece;
+  lot: { id: string; note: string; createdAt: string } | null;
+  events: { at: string; action: string; detail: string | null }[];
+  scans: { at: string; device: string | null }[];
+  leads: Lead[];
+};
+/** What the passport may tell a customer about the tag they scanned. */
+export type Verification = { kind: "genuine"; soldAt: string | null } | { kind: "void" } | { kind: "design" };
 export type Order = {
   id: string; mode: string; garment: string; unit: "in" | "cm"; measurements: Record<string, number>; spec: unknown; confidence: number;
   verdict: string; eventDate: string | null; embroidery: string; feasibility: { status: string; needDays: number; haveDays: number | null; readyBy: string; advice: string } | null;

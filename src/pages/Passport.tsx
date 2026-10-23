@@ -1,18 +1,38 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowRight, Check, LocateFixed, MapPin, Ruler, ShieldCheck } from "lucide-react";
-import { api, COLOUR_OPTIONS, swatch, type Design } from "../lib/api";
+import { AlertTriangle, ArrowRight, BadgeCheck, Check, LocateFixed, MapPin, QrCode, Ruler, ShieldCheck, Sparkles } from "lucide-react";
+import { api, COLOUR_OPTIONS, swatch, type Design, type Verification } from "../lib/api";
+import { openEnquiry } from "../lib/enquiry";
 import { photos, type Photo } from "../data/images";
 import { Img } from "../components/Img";
+import { ImageZoom } from "../components/ImageZoom";
 import { brand } from "../config/brand";
 import { usePageMeta } from "../hooks/usePageMeta";
+import { useScrollReveal } from "../hooks/useScrollReveal";
 import "./Passport.css";
 
 type Passport = {
   design: Design;
   piece: { code: string; colour: string; size: string; status: string } | null;
+  verification: Verification;
   availability: { tracked: boolean; inStock: { colour: string; size: string; count: number }[] };
 };
+
+const PIECE_STATE: Record<string, string> = { in_stock: "available", reserved: "reserved", sold: "sold", void: "retired tag" };
+
+/** Random, anonymous id kept on this phone so the studio can count distinct phones per tag. Never linked to a person. */
+function deviceId() {
+  try {
+    let id = localStorage.getItem("mehfil-device");
+    if (!id) {
+      id = Array.from(crypto.getRandomValues(new Uint8Array(9)), (b) => b.toString(16).padStart(2, "0")).join("");
+      localStorage.setItem("mehfil-device", id);
+    }
+    return id;
+  } catch {
+    return undefined;
+  }
+}
 
 const CONSENT =
   "Yes, I agree to share these details so Mehfil Couture can send me outfit recommendations on WhatsApp. I can reply STOP to opt out, and ask for my details to be deleted at any time.";
@@ -20,6 +40,8 @@ const OCCASIONS = ["Wedding", "Engagement", "Sangeet", "Mehendi / Haldi", "Recep
 const STYLES = ["Royal", "Romantic", "Minimal", "Contemporary", "Dramatic"];
 const BUDGETS = ["Under ₹50k", "₹50k–1L", "₹1L–2L", "Above ₹2L", "Not sure yet"];
 const SIZES = ["XS", "S", "M", "L", "XL", "XXL", "Custom (I'll measure)"];
+
+const reduceMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 const fallbackPhoto = (category: string): Photo =>
   /bridal/i.test(category) ? photos.velvetBride : /indo/i.test(category) ? photos.gowns : photos.blushPret;
@@ -37,14 +59,15 @@ export default function PassportPage() {
         if (!alive) return;
         setData(r);
         // Count one scan per code per browser session (no personal data)
+        const body = { code, device: deviceId() };
         try {
           const k = "mehfil-scan-" + code.toUpperCase();
           if (!sessionStorage.getItem(k)) {
             sessionStorage.setItem(k, "1");
-            api("/api/scan", { method: "POST", body: { code } }).catch(() => {});
+            api("/api/scan", { method: "POST", body }).catch(() => {});
           }
         } catch {
-          api("/api/scan", { method: "POST", body: { code } }).catch(() => {});
+          api("/api/scan", { method: "POST", body }).catch(() => {});
         }
       })
       .catch((e) => alive && setErr(e.message));
@@ -68,21 +91,36 @@ export default function PassportPage() {
     );
   if (!data)
     return (
-      <main id="main" className="wrap pp pp--empty" aria-busy="true">
+      <main id="main" className="wrap pp pp--empty pp--loading" aria-busy="true">
+        <span className="pp__scan" aria-hidden="true">
+          <QrCode size={44} strokeWidth={1.25} />
+          <i />
+        </span>
         <p className="label label-row">Digital passport</p>
         <p className="lede">Opening the outfit's story…</p>
       </main>
     );
 
-  const { design, piece, availability } = data;
+  return <PassportView data={data} />;
+}
+
+/** Mounted once the passport has loaded, so scroll reveals find their targets. */
+function PassportView({ data }: { data: Passport }) {
+  const main = useRef<HTMLElement>(null);
+  useScrollReveal(main);
+  const { design, piece, availability, verification } = data;
+  const retired = verification.kind === "void";
+  const owned = verification.kind === "genuine" && !!verification.soldAt;
   return (
-    <main id="main" className="pp">
+    <main id="main" className="pp" ref={main}>
       <section className="wrap pp__hero">
         <div className="pp__media frame">
           {design.imageUrl ? (
-            <img className="img-cover" src={design.imageUrl} alt={design.name} />
+            <ImageZoom mode="lens" alt={design.name}>
+              <img className="img-cover" src={design.imageUrl} alt={design.name} />
+            </ImageZoom>
           ) : (
-            <Img photo={fallbackPhoto(design.category)} sizes="(min-width: 900px) 40vw, 100vw" eager alt={`Mood image for ${design.category} — illustrative, not this exact piece`} />
+            <Img photo={fallbackPhoto(design.category)} zoom="lens" sizes="(min-width: 900px) 40vw, 100vw" eager alt={`Mood image for ${design.category} — illustrative, not this exact piece`} />
           )}
           {!design.imageUrl && <span className="pp__mood">Mood image</span>}
         </div>
@@ -92,9 +130,10 @@ export default function PassportPage() {
           </p>
           <h1 className="pp__title">{design.name}</h1>
           <p className="pp__cat">{design.category}</p>
+          <Authenticity v={verification} code={piece?.code ?? design.id} />
           {piece && (
             <p className="pp__piece">
-              This tag: <b>{piece.colour}</b> · size <b>{piece.size}</b> · {piece.status === "in_stock" ? "available" : piece.status}
+              This tag: <b>{piece.colour}</b> · size <b>{piece.size}</b> · {PIECE_STATE[piece.status] ?? piece.status}
             </p>
           )}
           <div className="pp__block">
@@ -109,7 +148,7 @@ export default function PassportPage() {
         </div>
       </section>
 
-      <section className="wrap pp__avail" aria-labelledby="avail-title">
+      <section className="wrap pp__avail" aria-labelledby="avail-title" data-reveal>
         <h2 id="avail-title" className="h3">
           Colours &amp; sizes <em>available</em>
         </h2>
@@ -117,19 +156,70 @@ export default function PassportPage() {
       </section>
 
       <section className="wrap pp__cta">
-        <LeadForm code={piece ? piece.code : design.id} design={design} />
-        <aside className="pp__measure">
-          <Ruler size={22} />
-          <div>
-            <b>Ordering it made-to-measure?</b>
-            <p>Check your measurements with Mehfil FitCheck before the fabric is cut.</p>
-            <Link className="link-arrow" to={`/fitcheck?design=${encodeURIComponent(design.id)}`}>
-              Measure with FitCheck <ArrowRight />
-            </Link>
+        {!retired && (
+          <div data-reveal>
+            <LeadForm code={piece ? piece.code : design.id} design={design} />
           </div>
-        </aside>
+        )}
+        <div className="pp__side">
+          {owned && piece && (
+            <aside className="pp__measure pp__owner" data-reveal>
+              <Sparkles size={22} />
+              <div>
+                <b>Yours to keep beautiful</b>
+                <p>{design.care || "Dry clean only. Store folded in muslin, away from direct sunlight."}</p>
+                <button
+                  type="button"
+                  className="link-arrow"
+                  onClick={() =>
+                    openEnquiry(`Hi Mehfil Couture! I own the ${design.name} (tag ${piece.code}, ${piece.colour}, size ${piece.size}) and would like help with an alteration or care.`, "passport_owner")
+                  }
+                >
+                  Alterations &amp; care <ArrowRight />
+                </button>
+              </div>
+            </aside>
+          )}
+          <aside className="pp__measure" data-reveal>
+            <Ruler size={22} />
+            <div>
+              <b>Ordering it made-to-measure?</b>
+              <p>Check your measurements with Mehfil FitCheck before the fabric is cut.</p>
+              <Link className="link-arrow" to={`/fitcheck?design=${encodeURIComponent(design.id)}`}>
+                Measure with FitCheck <ArrowRight />
+              </Link>
+            </div>
+          </aside>
+        </div>
       </section>
     </main>
+  );
+}
+
+function Authenticity({ v, code }: { v: Verification; code: string }) {
+  if (v.kind === "design")
+    return <p className="pp__auth is-design"><QrCode size={18} /> <span>This is a design code. Each piece's own tag also confirms it's genuine.</span></p>;
+  if (v.kind === "void")
+    return (
+      <div className="pp__auth is-void" role="alert">
+        <AlertTriangle size={18} />
+        <span>
+          <b>This tag has been retired by the studio.</b> If you bought this piece, message us with the code <code>{code}</code> and we'll check it for you.
+          <button type="button" className="link-arrow" onClick={() => openEnquiry(`Hi Mehfil Couture! I scanned tag ${code} and it says the tag was retired. Can you check it for me?`, "passport_void")}>
+            Ask the studio <ArrowRight />
+          </button>
+        </span>
+      </div>
+    );
+  const sold = v.soldAt ? new Date(v.soldAt + "T12:00:00").toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" }) : null;
+  return (
+    <p className="pp__auth is-genuine">
+      <BadgeCheck size={18} />
+      <span>
+        <b>Genuine Mehfil Couture.</b>{" "}
+        {sold ? <>Sold by the studio on {sold}. If you bought it new on a different date, please let us know.</> : <>This tag is registered to this exact piece.</>}
+      </span>
+    </p>
   );
 }
 
@@ -190,7 +280,21 @@ function LeadForm({ code, design }: { code: string; design: Design }) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [state, setState] = useState<"idle" | "sending" | "done">("idle");
   const [apiErr, setApiErr] = useState("");
+  const doneRef = useRef<HTMLDivElement>(null);
   const palette = Array.from(new Set([...design.colours, ...COLOUR_OPTIONS])).slice(0, 14);
+  const filled = [
+    !!occasion,
+    /^\+?\d{10,13}$/.test(mobile.replace(/[\s-]/g, "")),
+    !!size,
+    loc.method === "gps" || !!loc.text.trim(),
+    colours.length > 0,
+  ];
+  const count = filled.filter(Boolean).length;
+
+  // The thank-you card is much shorter than the form — bring it into view
+  useEffect(() => {
+    if (state === "done") doneRef.current?.scrollIntoView({ block: "center" });
+  }, [state]);
 
   function useMyLocation() {
     setLocMsg("");
@@ -225,7 +329,14 @@ function LeadForm({ code, design }: { code: string; design: Design }) {
     if (!consent) err.consent = "Please tick the box so we're allowed to save and use these details.";
     setErrors(err);
     if (Object.keys(err).length) {
-      document.querySelector<HTMLElement>(`[data-err="${Object.keys(err)[0]}"]`)?.focus();
+      const first = document.querySelector<HTMLElement>(`[data-err="${Object.keys(err)[0]}"]`);
+      first?.focus();
+      // A short nudge on the first thing that needs fixing
+      if (!reduceMotion())
+        first?.animate(
+          [{ transform: "translateX(0)" }, { transform: "translateX(-6px)" }, { transform: "translateX(5px)" }, { transform: "translateX(-3px)" }, { transform: "translateX(0)" }],
+          { duration: 320, easing: "cubic-bezier(0.23, 1, 0.32, 1)" },
+        );
       return;
     }
     setState("sending");
@@ -248,8 +359,13 @@ function LeadForm({ code, design }: { code: string; design: Design }) {
 
   if (state === "done")
     return (
-      <div className="pp__form pp__done" role="status">
-        <span className="pp__ok"><Check size={22} /></span>
+      <div className="pp__form pp__done" role="status" ref={doneRef}>
+        <span className="pp__ok" aria-hidden="true">
+          <svg viewBox="0 0 52 52">
+            <circle cx="26" cy="26" r="24" />
+            <path d="M15 27l7 7 15-15" />
+          </svg>
+        </span>
         <h2 className="h3">Thank you — <em>we'll be in touch.</em></h2>
         <p>
           Mehfil Couture will WhatsApp you picks that match your occasion, size and colours from {brand.name}'s business account. Reply STOP any
@@ -259,6 +375,12 @@ function LeadForm({ code, design }: { code: string; design: Design }) {
     );
 
   const chip = (on: boolean) => ({ "aria-pressed": on, className: "chip" });
+  const step = (n: number) => (
+    <span className="pp__n" data-done={filled[n - 1] || undefined}>
+      <b>{n}</b>
+      <Check size={14} strokeWidth={3} aria-hidden="true" />
+    </span>
+  );
   return (
     <form className="pp__form" onSubmit={submit} noValidate aria-labelledby="lead-title">
       <p className="label label--gold">Personal picks on WhatsApp</p>
@@ -268,9 +390,15 @@ function LeadForm({ code, design }: { code: string; design: Design }) {
       <p className="pp__why">
         <ShieldCheck size={16} /> We only ask for these five details and use them only to send you recommendations. Never sold or shared.
       </p>
+      <div className="pp__progress" data-complete={count === 5 || undefined}>
+        <span className="pp__meter" aria-hidden="true">
+          <i style={{ transform: `scaleX(${count / 5})` }} />
+        </span>
+        <span className="pp__count">{count === 5 ? "All 5 done" : `${count} of 5`}</span>
+      </div>
 
       <fieldset className="pp__fs">
-        <legend><span className="pp__n">1</span> Your preferences</legend>
+        <legend>{step(1)} Your preferences</legend>
         <div className="pp__chips" data-err="occasion" tabIndex={-1} aria-label="Occasion">
           {OCCASIONS.map((o) => <button key={o} type="button" {...chip(occasion === o)} onClick={() => setOccasion(o)}>{o}</button>)}
         </div>
@@ -294,13 +422,13 @@ function LeadForm({ code, design }: { code: string; design: Design }) {
       </fieldset>
 
       <fieldset className="pp__fs">
-        <legend><span className="pp__n">2</span> Mobile number</legend>
+        <legend>{step(2)} Mobile number</legend>
         <input className="input" data-err="mobile" inputMode="tel" autoComplete="tel" placeholder="+91 98xxx xxxxx" value={mobile} onChange={(e) => setMobile(e.target.value)} aria-invalid={!!errors.mobile || undefined} aria-label="WhatsApp mobile number" />
         {errors.mobile && <p className="field-error">{errors.mobile}</p>}
       </fieldset>
 
       <fieldset className="pp__fs">
-        <legend><span className="pp__n">3</span> Your size</legend>
+        <legend>{step(3)} Your size</legend>
         <div className="pp__chips" data-err="size" tabIndex={-1} aria-label="Size">
           {SIZES.map((s) => <button key={s} type="button" {...chip(size === s)} onClick={() => setSize(s)}>{s}</button>)}
         </div>
@@ -308,7 +436,7 @@ function LeadForm({ code, design }: { code: string; design: Design }) {
       </fieldset>
 
       <fieldset className="pp__fs">
-        <legend><span className="pp__n">4</span> Your location</legend>
+        <legend>{step(4)} Your location</legend>
         <div className="pp__loc">
           <button type="button" className="btn btn--ghost" onClick={useMyLocation}><LocateFixed /> Use my exact location</button>
           <span className="pp__or">or</span>
@@ -322,7 +450,7 @@ function LeadForm({ code, design }: { code: string; design: Design }) {
       </fieldset>
 
       <fieldset className="pp__fs">
-        <legend><span className="pp__n">5</span> Colours you love</legend>
+        <legend>{step(5)} Colours you love</legend>
         <div className="pp__chips" data-err="colours" tabIndex={-1} aria-label="Colours">
           {palette.map((c) => {
             const on = colours.includes(c);

@@ -1,5 +1,6 @@
 import { FIELDS, GARMENTS, fmt, fromIn, toIn, type FieldKey, type GarmentKey, type Unit } from "./fields";
 import { benchmarkRow, type SizeChart } from "./sizechart";
+import type { Anomaly } from "./ml";
 
 export type Severity = "red" | "yellow";
 export type Fix =
@@ -12,7 +13,7 @@ export type Issue = {
   id: string;
   field: FieldKey | null;
   severity: Severity;
-  rule: "missing" | "hard" | "unit" | "typo" | "ratio" | "chart";
+  rule: "missing" | "hard" | "unit" | "typo" | "ratio" | "chart" | "anomaly";
   message: string;
   fixes: Fix[];
 };
@@ -32,6 +33,7 @@ type Input = {
   garment: GarmentKey;
   chart?: SizeChart | null;
   confirmed?: string[]; // issue ids the customer confirmed as correct
+  anomaly?: Anomaly | null; // Isolation Forest verdict on the whole set (ml.ts), when the service is up
 };
 
 const swapDigits = (v: number) => {
@@ -40,8 +42,8 @@ const swapDigits = (v: number) => {
   return Number(s[1] + s[0]);
 };
 
-/** Layered validation: missing → hard limits → unit detection → typos → ratio rules → size-chart benchmark. */
-export function validate({ values, unit, garment, chart, confirmed = [] }: Input): Result {
+/** Layered validation: missing → hard limits → unit detection → typos → ratio rules → size-chart benchmark → ML anomaly. */
+export function validate({ values, unit, garment, chart, confirmed = [], anomaly }: Input): Result {
   const issues: Issue[] = [];
   const g = GARMENTS[garment];
   const inches: Partial<Record<FieldKey, number>> = {};
@@ -160,6 +162,18 @@ export function validate({ values, unit, garment, chart, confirmed = [] }: Input
         }
       }
     }
+  }
+
+  // 6 · Isolation Forest: every value plausible alone, but the set doesn't look like one body.
+  // Only speaks up when the rules found nothing for that field — they explain problems better.
+  const sus = anomaly?.checked && anomaly.anomalous ? anomaly.suspect : undefined;
+  if (sus && !issues.some((i) => i.severity === "red" || i.field === sus.field)) {
+    const f = FIELDS[sus.field];
+    issues.push({
+      id: `anomaly:${sus.field}`, field: sus.field, severity: "yellow", rule: "anomaly",
+      message: `Taken together, these measurements don't match the usual body pattern — ${f.label.toLowerCase()} stands out most. With your other numbers we'd expect about ${fmt(fromIn(sus.expectedLow, unit), unit)}–${fmt(fromIn(sus.expectedHigh, unit), unit)} ${unit}. Bodies vary, so just check it.`,
+      fixes: [{ kind: "remeasure", field: sus.field, label: `Re-measure ${f.label.toLowerCase()}` }, { kind: "confirm", label: "It's correct" }],
+    });
   }
 
   // Confidence

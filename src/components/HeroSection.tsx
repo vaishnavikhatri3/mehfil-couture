@@ -86,6 +86,7 @@ export function HeroSection() {
                 photo={photos.heroRed}
                 eager
                 q={78}
+                zoomScale={1.6}
                 className="img-cover hero__img"
                 sizes="(min-width: 1100px) 42vw, (min-width: 700px) 60vw, 100vw"
               />

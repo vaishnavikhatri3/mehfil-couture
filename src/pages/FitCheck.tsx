@@ -5,17 +5,19 @@ import { FIELDS, GARMENTS, fmt, fromIn, parseMeasure, toIn, type FieldKey, type 
 import { validate, type Fix, type Issue } from "../lib/fitcheck/validate";
 import { FABRICS, FLAT_FIELDS, FLAT_GARMENTS, FLAT_REQUIRED, inferBody, type Fabric, type FlatGarment, type FlatKey } from "../lib/fitcheck/garment";
 import { buildSpec, EMBROIDERY, feasibility, type Embroidery } from "../lib/fitcheck/tailoring";
-import { parseCardText, recognise } from "../lib/fitcheck/ocr";
+import { mergeReads, parseCardText, recognise } from "../lib/fitcheck/ocr";
+import { bodyInches, checkAnomaly, readCardOnServer, type Anomaly } from "../lib/fitcheck/ml";
 import type { SizeChart } from "../lib/fitcheck/sizechart";
-import { api } from "../lib/api";
+import { api, ApiError } from "../lib/api";
 import { copyText } from "../lib/enquiry";
 import { toast } from "../lib/toast";
 import { usePageMeta } from "../hooks/usePageMeta";
 import { BodyGuide, FlatGuide } from "../components/fitcheck/MeasureGuide";
+import { MeasureWalkthrough } from "../components/fitcheck/MeasureWalkthrough";
 import "./FitCheck.css";
 
 type Method = "body" | "garment" | "card";
-type Step = "measure" | "order" | "done";
+type Step = "guide" | "measure" | "order" | "done";
 type Draft = {
   method: Method; garment: GarmentKey; unit: Unit; raw: Partial<Record<FieldKey, string>>;
   flatType: FlatGarment; fabric: Fabric; flatRaw: Partial<Record<FlatKey, string>>; confirmed: string[];
@@ -54,7 +56,8 @@ export default function FitCheck() {
   const designCode = params.get("design");
   const [d, setD] = useState<Draft>(EMPTY);
   const [resume, setResume] = useState<Draft | null>(null);
-  const [step, setStep] = useState<Step>("measure");
+  // Every visit opens on the visual measuring guide before the form
+  const [step, setStep] = useState<Step>("guide");
   const [active, setActive] = useState<FieldKey | null>("bust");
   const [activeFlat, setActiveFlat] = useState<FlatKey | null>("chestFlat");
   const [charts, setCharts] = useState<SizeChart[]>([]);
@@ -108,7 +111,26 @@ export default function FitCheck() {
     return inferred ? { ...v, ...inferred.body } : v;
   }, [d.raw, inferred]);
 
-  const result = useMemo(() => validate({ values, unit: d.unit, garment: d.garment, chart, confirmed: d.confirmed }), [values, d.unit, d.garment, chart, d.confirmed]);
+  // Isolation Forest check on the whole set (optional: skipped while the ML service is down)
+  const [anomaly, setAnomaly] = useState<Anomaly | null>(null);
+  const bodyKey = JSON.stringify(bodyInches(values, d.unit));
+  useEffect(() => {
+    let live = true;
+    const t = window.setTimeout(() => {
+      checkAnomaly(JSON.parse(bodyKey))
+        .then((a) => live && setAnomaly(a))
+        .catch(() => live && setAnomaly(null));
+    }, 500);
+    return () => {
+      live = false;
+      window.clearTimeout(t);
+    };
+  }, [bodyKey]);
+
+  const result = useMemo(
+    () => validate({ values, unit: d.unit, garment: d.garment, chart, confirmed: d.confirmed, anomaly }),
+    [values, d.unit, d.garment, chart, d.confirmed, anomaly],
+  );
   const feas = useMemo(() => feasibility(d.garment, d.embroidery, d.eventDate || null), [d.garment, d.embroidery, d.eventDate]);
   const spec = useMemo(() => buildSpec(d.garment, result.inches, d.unit), [d.garment, result.inches, d.unit]);
   const canContinue = result.verdict !== "red" && result.missing.length === 0;
@@ -174,7 +196,13 @@ export default function FitCheck() {
     }
   }
 
+  const toStep = (s: Step) => {
+    setStep(s);
+    topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   const steps: { key: Step; label: string }[] = [
+    { key: "guide", label: "How to measure" },
     { key: "measure", label: "Measure & check" },
     { key: "order", label: "Event & delivery" },
     { key: "done", label: "Spec sheet & tracking" },
@@ -211,7 +239,7 @@ export default function FitCheck() {
           <div className="fc__resume" role="status">
             <RotateCcw size={18} />
             <span>You have a saved measurement draft on this device.</span>
-            <button type="button" className="btn btn--ghost fc__sm" onClick={() => (setD({ ...EMPTY, ...resume }), setResume(null))}>
+            <button type="button" className="btn btn--ghost fc__sm" onClick={() => (setD({ ...EMPTY, ...resume }), setResume(null), setStep((s) => (s === "guide" ? "measure" : s)))}>
               Resume
             </button>
             <button type="button" className="link-arrow" onClick={() => (store.set(DRAFT_KEY, null), setResume(null))}>
@@ -226,6 +254,14 @@ export default function FitCheck() {
             Already submitted? <Link to={`/order/${lastOrder}`}>Track order {lastOrder}</Link>
           </p>
         </div>
+      )}
+
+      {step === "guide" && (
+        <MeasureWalkthrough
+          garment={d.garment}
+          onGarment={(g) => set("garment", g)}
+          onStart={(m) => (set("method", m), toStep("measure"))}
+        />
       )}
 
       {step === "measure" && (
@@ -417,9 +453,12 @@ export default function FitCheck() {
                     <p className="fc__tip">Tip: {FIELDS[active].tip}</p>
                   </>
                 ) : null}
+                <button type="button" className="link-arrow fc__reguide" onClick={() => toStep("guide")}>
+                  See the full measuring guide <ArrowRight />
+                </button>
               </div>
             </div>
-            <CheckPanel result={result} unit={d.unit} onFix={applyFix} garmentMode={d.method === "garment"} inferred={inferredFields} />
+            <CheckPanel result={result} unit={d.unit} onFix={applyFix} garmentMode={d.method === "garment"} inferred={inferredFields} learned={!!anomaly?.checked} />
             <button type="button" className="btn btn--block" disabled={!canContinue} onClick={() => (setStep("order"), topRef.current?.scrollIntoView({ behavior: "smooth" }))}>
               Continue to event & delivery <ArrowRight />
             </button>
@@ -557,8 +596,9 @@ function ConfidenceRing({ value, verdict }: { value: number; verdict: string }) 
   );
 }
 
-function CheckPanel({ result, unit, onFix, compact, garmentMode, inferred }: {
+function CheckPanel({ result, unit, onFix, compact, garmentMode, inferred, learned }: {
   result: ReturnType<typeof validate>; unit: Unit; onFix: (i: Issue, f: Fix) => void; compact?: boolean; garmentMode?: boolean; inferred?: Set<FieldKey>;
+  learned?: boolean;
 }) {
   const empty = Object.keys(result.inches).length === 0;
   const label = empty
@@ -600,7 +640,12 @@ function CheckPanel({ result, unit, onFix, compact, garmentMode, inferred }: {
           ))}
         </ul>
       )}
-      {!compact && <p className="note">Checks: unit &amp; typo detection ({unit === "in" ? "inches" : "cm"} form), human limits, body proportions, and the size-chart benchmark.</p>}
+      {!compact && (
+        <p className="note">
+          Checks: unit &amp; typo detection ({unit === "in" ? "inches" : "cm"} form), human limits, body proportions, the size-chart benchmark
+          {learned ? ", and a learned check of how your measurements fit together" : ""}.
+        </p>
+      )}
     </div>
   );
 }
@@ -608,7 +653,7 @@ function CheckPanel({ result, unit, onFix, compact, garmentMode, inferred }: {
 function CardReader({ unit, onUse }: { unit: Unit; onUse: (fields: Partial<Record<FieldKey, string>>, unit: Unit | null) => void }) {
   const [preview, setPreview] = useState<string | null>(null);
   const [status, setStatus] = useState<"idle" | "reading" | "review" | "error">("idle");
-  const [progress, setProgress] = useState(0);
+  const [progress, setProgress] = useState<number | null>(0); // null → server reading, no progress to show
   const [rows, setRows] = useState<{ field: FieldKey; value: string; line: string }[]>([]);
   const [found, setFound] = useState<Unit | null>(null);
   const [unmatched, setUnmatched] = useState<string[]>([]);
@@ -620,15 +665,23 @@ function CardReader({ unit, onUse }: { unit: Unit; onUse: (fields: Partial<Recor
       return URL.createObjectURL(blob);
     });
     setStatus("reading");
-    setProgress(0);
+    setProgress(null);
     try {
-      const text = await recognise(blob, setProgress);
-      const parsed = parseCardText(text);
+      // PaddleOCR on our server reads handwriting better; Tesseract in the browser is the fallback
+      const parsed = await readCardOnServer(blob).then(
+        (text) => mergeReads([parseCardText(text)]),
+        (e: unknown) => {
+          if (e instanceof ApiError && e.status === 400) throw e;
+          setProgress(0);
+          return recognise(blob, setProgress);
+        },
+      );
       setRows(parsed.fields.map((f) => ({ field: f.field, value: String(f.value), line: f.line })));
       setFound(parsed.unit);
       setUnmatched(parsed.unmatched.slice(0, 6));
       setStatus("review");
-    } catch {
+    } catch (e) {
+      console.error("FitCheck: couldn't read the card", e);
       setStatus("error");
     }
   }
@@ -636,8 +689,8 @@ function CardReader({ unit, onUse }: { unit: Unit; onUse: (fields: Partial<Recor
   return (
     <div className="fc__card">
       <p className="note">
-        Take a clear, flat photo of the paper measurement card. Reading happens on this device — the photo isn't uploaded. Handwriting is tricky,
-        so you'll check every value before it's used.
+        Take a clear, flat photo of the paper measurement card. The photo is sent to our server only to read it and is never stored (if the
+        reader is offline, it's read on this device instead). Handwriting is tricky, so you'll check every value before it's used.
       </p>
       <div className="fc__actions">
         <button type="button" className="btn btn--ghost" onClick={() => fileRef.current?.click()}>
@@ -661,7 +714,15 @@ function CardReader({ unit, onUse }: { unit: Unit; onUse: (fields: Partial<Recor
           <div>
             {status === "reading" && (
               <p className="fc__reading">
-                Reading the card… {Math.round(progress * 100)}%<span className="fc__bar"><i style={{ width: `${Math.round(progress * 100)}%` }} /></span>
+                {progress == null ? (
+                  <>
+                    Reading the card…<span className="fc__bar is-busy"><i /></span>
+                  </>
+                ) : (
+                  <>
+                    Reading the card… {Math.round(progress * 100)}%<span className="fc__bar"><i style={{ width: `${Math.round(progress * 100)}%` }} /></span>
+                  </>
+                )}
               </p>
             )}
             {status === "error" && <p className="fc__err">Couldn't read this photo. Try a sharper, well-lit picture — or type the values in "My body".</p>}

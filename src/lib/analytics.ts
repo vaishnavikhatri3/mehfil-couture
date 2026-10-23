@@ -7,8 +7,8 @@ import { brand } from "../config/brand";
  *
  * Event names: collection_click, enquiry_open, appointment_submit,
  * studio_complete, studio_share, newsletter_submit, campaign_click,
- * look_saved, journal_open, lens_open, lens_photo_added, lens_download,
- * lens_share. (The lens never sends the photo anywhere.)
+ * look_saved, journal_open, lens_open, lens_photo_added, lens_autofit,
+ * lens_download, lens_share. (The lens never sends the photo anywhere.)
  */
 
 type Props = Record<string, string | number | boolean | undefined>;

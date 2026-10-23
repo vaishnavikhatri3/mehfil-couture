@@ -14,7 +14,20 @@ export function Designs({ ctx }: { ctx: AdminCtx }) {
   const [editing, setEditing] = useState<string | null>(null);
   const [err, setErr] = useState("");
   const [qr, setQr] = useState<{ design: Design; url: string } | null>(null);
+  const [qrClosing, setQrClosing] = useState(false);
   const [confirmDel, setConfirmDel] = useState<string | null>(null);
+
+  // Exit is quicker than the entrance; Escape closes instantly (keyboard actions don't animate)
+  const closeQr = () => {
+    setQrClosing(true);
+    window.setTimeout(() => (setQr(null), setQrClosing(false)), 160);
+  };
+  useEffect(() => {
+    if (!qr) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && (setQr(null), setQrClosing(false));
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [qr]);
 
   const load = () =>
     api<{ designs: Design[] }>("/api/admin/designs", { admin: true })
@@ -74,7 +87,7 @@ export function Designs({ ctx }: { ctx: AdminCtx }) {
       </div>
 
       {f && (
-        <form className="ad__card ad__form" onSubmit={save}>
+        <form className="ad__card ad__form ad__enter" onSubmit={save}>
           <div className="ad__row">
             <h2 className="ad__h2">{editing ? `Edit ${editing}` : "New design"}</h2>
             <button type="button" className="ad__icon" aria-label="Close" onClick={() => (setForm(null), setEditing(null))}><X size={18} /></button>
@@ -152,13 +165,15 @@ export function Designs({ ctx }: { ctx: AdminCtx }) {
       )}
 
       {qr && (
-        <div className="ad__modal" role="dialog" aria-modal="true" aria-label={`QR for ${qr.design.name}`} onClick={(e) => e.target === e.currentTarget && setQr(null)}>
+        <div className="ad__modal" role="dialog" aria-modal="true" aria-label={`QR for ${qr.design.name}`} data-closing={qrClosing || undefined} onClick={(e) => e.target === e.currentTarget && closeQr()}>
           <div className="ad__modal-card">
             <div className="ad__row">
               <h2 className="ad__h2">Design QR · {qr.design.id}</h2>
-              <button type="button" className="ad__icon" aria-label="Close" onClick={() => setQr(null)}><X size={18} /></button>
+              <button type="button" className="ad__icon" aria-label="Close" onClick={closeQr}><X size={18} /></button>
             </div>
-            <img src={qr.url} alt={`QR code for ${qr.design.name}`} className="ad__qr-big" />
+            <span className="ad__qr-print">
+              <img src={qr.url} alt={`QR code for ${qr.design.name}`} className="ad__qr-big" />
+            </span>
             <p className="note">Opens <code>{passportUrl(qr.design.id)}</code>. Use it on posters, the studio counter or Instagram. For individual garments, generate a lot so each piece has its own code and stock status.</p>
             <button type="button" className="btn" onClick={() => downloadDataUrl(qr.url, `${qr.design.id}-qr.png`)}><Download /> Download PNG</button>
           </div>

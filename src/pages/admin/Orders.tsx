@@ -32,6 +32,11 @@ export function Orders({ ctx }: { ctx: AdminCtx }) {
     try {
       const r = await api<{ order: Order }>(`/api/admin/orders/${o.id}`, { method: "PATCH", admin: true, body: { status } });
       setOrders((os) => os && os.map((x) => (x.id === o.id ? r.order : x)));
+      // Brief highlight on the row that changed
+      document.querySelector(`[data-order="${o.id}"]`)?.animate([{ backgroundColor: "rgba(240, 226, 197, 0.9)" }, { backgroundColor: "rgba(240, 226, 197, 0)" }], {
+        duration: 900,
+        easing: "ease",
+      });
       toast(`${o.id} → ${STATUS.find((s) => s.key === status)?.label}. The customer's timeline is updated.`);
     } catch (e) {
       ctx.onAuthError(e);
@@ -59,7 +64,7 @@ export function Orders({ ctx }: { ctx: AdminCtx }) {
             <tbody>
               {orders.map((o) => (
                 <Fragment key={o.id}>
-                  <tr>
+                  <tr data-order={o.id}>
                     <td><b>{o.id}</b><small>{new Date(o.createdAt).toLocaleDateString("en-IN", { dateStyle: "medium" })} · {o.mode}</small></td>
                     <td>{o.garment}</td>
                     <td className="num"><span className={`ad__verdict is-${o.verdict}`}>{o.confidence}</span></td>
@@ -82,7 +87,7 @@ export function Orders({ ctx }: { ctx: AdminCtx }) {
                   {open === o.id && (
                     <tr className="ad__detail">
                       <td colSpan={8}>
-                        <div className="ad__detail-grid">
+                        <div className="ad__detail-grid ad__enter">
                           <div>
                             <p className="label">Entered ({o.unit})</p>
                             <ul className="ad__kv">

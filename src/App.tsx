@@ -7,6 +7,7 @@ import { WhatsAppButton } from "./components/WhatsAppButton";
 import { Toaster } from "./components/Toaster";
 import { ConsentBanner } from "./components/ConsentBanner";
 import { TryOnLens } from "./components/TryOnLens";
+import { ZoomViewer } from "./components/ZoomViewer";
 import Home from "./pages/Home";
 import Article from "./pages/Article";
 import Privacy from "./pages/Privacy";
@@ -44,6 +45,7 @@ function Layout() {
       <WhatsAppButton />
       <ConsentBanner />
       <Toaster />
+      <ZoomViewer />
     </>
   );
 }

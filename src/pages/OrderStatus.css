@@ -10,15 +10,20 @@
   padding: 0;
   display: grid;
 }
+/* Each step lands one after another; the rail fills down to where the order is now.
+   --i is the step's index, set inline. */
 .os__steps li {
+  --at: calc(200ms + var(--i, 0) * 260ms);
   position: relative;
   display: grid;
   grid-template-columns: 28px 1fr;
   gap: 16px;
   padding-bottom: 26px;
   color: var(--ink-soft);
+  animation: os-rise 500ms var(--ease-out) calc(var(--i, 0) * 60ms) backwards;
 }
-.os__steps li::before {
+.os__steps li::before,
+.os__steps li::after {
   content: "";
   position: absolute;
   left: 13px;
@@ -27,28 +32,105 @@
   width: 2px;
   background: var(--line);
 }
-.os__steps li:last-child::before {
+.os__steps li::after {
+  display: none;
+  background: var(--sage);
+  transform-origin: top;
+  animation: os-rail 260ms var(--ease-in-out) var(--at) backwards;
+}
+.os__steps li.is-done:not(.is-now)::after {
+  display: block;
+}
+.os__steps li:last-child::before,
+.os__steps li:last-child::after {
   display: none;
 }
-.os__steps li.is-done::before {
-  background: var(--sage);
-}
 .os__dot {
+  position: relative;
   width: 28px;
   height: 28px;
   border-radius: 50%;
   border: 2px solid var(--line);
   background: var(--paper);
   z-index: 1;
+  display: grid;
+  place-items: center;
+  color: var(--paper);
 }
-.os__steps li.is-done .os__dot {
+.os__dot svg {
+  position: relative;
+  animation: os-pop 260ms var(--ease-out) var(--at) backwards;
+}
+.os__steps li.is-done .os__dot::before,
+.os__steps li.is-now .os__dot::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
   background: var(--sage);
-  border-color: var(--sage);
+  animation: os-pop 260ms var(--ease-out) var(--at) backwards;
 }
 .os__steps li.is-now .os__dot {
-  background: var(--maroon);
-  border-color: var(--maroon);
   box-shadow: 0 0 0 5px var(--gold-tint);
+}
+.os__steps li.is-now .os__dot::before {
+  background: var(--maroon);
+}
+/* "You are here" — a slow ripple once the cascade has arrived */
+.os__steps li.is-now .os__dot::after {
+  content: "";
+  position: absolute;
+  inset: -7px;
+  border-radius: 50%;
+  border: 2px solid var(--gold-soft);
+  opacity: 0;
+  animation: os-here 2400ms var(--ease-out) calc(var(--at) + 300ms) infinite;
+}
+
+@keyframes os-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@keyframes os-rail {
+  from {
+    transform: scaleY(0);
+  }
+}
+@keyframes os-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+}
+@keyframes os-here {
+  0% {
+    opacity: 0.8;
+    transform: scale(1);
+  }
+  70%,
+  100% {
+    opacity: 0;
+    transform: scale(1.5);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .os__steps li,
+  .os__steps li::after,
+  .os__dot svg,
+  .os__steps li .os__dot::before {
+    animation-name: os-fade;
+  }
+  .os__steps li.is-now .os__dot::after {
+    display: none;
+  }
+  @keyframes os-fade {
+    from {
+      opacity: 0;
+    }
+  }
 }
 .os__steps b {
   font-family: var(--display-2);

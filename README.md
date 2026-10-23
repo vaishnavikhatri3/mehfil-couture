@@ -23,7 +23,7 @@ Requires **Node 22.13+** (the API uses Node's built-in SQLite — no database to
 | `/fitcheck` | **Mehfil FitCheck** — remote measurement validator & tailoring spec engine (Problem Statement) |
 | `/p/:code` | **QR digital passport** — what a customer sees after scanning a tag |
 | `/order/:id` | Customer order timeline (also the save / resume link) |
-| `/admin` | **Studio portal** — dashboard, designs, QR generator (lots), leads, FitCheck orders, size charts |
+| `/admin` | **Studio portal** — dashboard, designs, QR generator (lots), pieces, scan tags, leads, FitCheck orders, size charts |
 
 **Studio portal passcode:** `mehfil-admin-2026` by default — set `ADMIN_PASSCODE` before going live.
 
@@ -32,18 +32,37 @@ Requires **Node 22.13+** (the API uses Node's built-in SQLite — no database to
 2. **Garment dimension inference** — `garment.ts`: body = flat width × 2 − garment ease + fabric stretch (blouse / kurti / dress; cotton … knit).
 3. **Visual measurement helper** — `components/fitcheck/MeasureGuide.tsx`: animated SVG body & flat-garment guides with tips per measurement.
 4. **Public size chart ingestion** — Studio portal → Size charts: paste a CSV / table (Indian, UK, US; cm or in, ranges OK) → used as the benchmark baseline.
-5. **OCR handwritten card parser** — `ocr.ts`: Tesseract.js runs in the browser (photo never uploaded), a Hinglish tailor dictionary with fuzzy matching (chhati, kamar, teera, baazu, lambai…), then a review screen. Try it with “Try a sample card”.
+5. **OCR handwritten card parser** — **PaddleOCR** (pretrained, in `ml/card_ocr.py`) reads the card on the server; the photo is downscaled in the browser, read in memory and never stored. If the ML service is down, Tesseract.js reads it in the browser instead. Either way `ocr.ts` maps the text with a Hinglish tailor dictionary and fuzzy matching (chhati, kamar, teera, baazu, lambai…), then a review screen. Try it with “Try a sample card”.
+6. **Measurement anomaly detection (ML)** — `ml/anomaly.py`: a scikit-learn **Isolation Forest** looks at bust, under-bust, waist, hip, shoulder, armhole, waist-to-floor and height *together* and flags sets where each value is plausible alone but the combination isn't one body. It names the field that stands out most and the range expected from the others. It runs after the rule engine (layer 6 in `validate.ts`), only on values inside the hard limits, and only ever raises a yellow “please check”. Training data: a synthetic population (`ml/population.py`, tuned to the `typical` ranges in `fields.ts` — replace with real data when you have it) plus every **green** order in `data/mehfil.db`, reloaded each time the service starts.
+
+**Which part is ML:** the Isolation Forest is a trained model; PaddleOCR is a pretrained model used as-is; `validate.ts` (hard limits, unit and typo detection, ratios, size chart) is a deterministic rule engine.
+
+**Running the ML service** (optional — the site works without it). Python 3.10–3.12:
+
+```bash
+python -m venv D:/mehfil-ml/venv                     # anywhere with ~3 GB free; keep it out of OneDrive
+D:/mehfil-ml/venv/Scripts/python -m pip install -r ml/requirements.txt     # macOS / Linux: <venv>/bin/python
+cd ml
+PADDLE_PDX_CACHE_HOME=D:/mehfil-ml/models D:/mehfil-ml/venv/Scripts/python -m uvicorn app:app --port 8001
+```
+
+`PADDLE_PDX_CACHE_HOME` is where PaddleOCR keeps its downloaded models (default: `~/.paddlex` on the system drive).
+
+The Node API proxies `/api/fitcheck/anomaly` and `/api/fitcheck/ocr` to `ML_SERVICE_URL` (default `http://127.0.0.1:8001`). The first card read downloads PaddleOCR's models (~100 MB) and takes longer.
 
 Crisis-brief adaptations: garment fast path, transparent order timeline (confirmed → stylist review → tailor review → production → ready → delivered), stylist-assisted review request, and save & resume (draft autosaves on the device; the order link resumes tracking).
 
 #### QR system
 - **Designs** hold what the passport shows: embroidery story, fabric, care, colours, sizes, occasions.
-- **QR generator → lots**: pick a design, add colour × size × quantity lines; each piece gets a unique code (`MC-LP-014-4F2A9C`) stored as *in stock*, and a QR that opens `<site>/p/<code>`. Print the label sheet; mark pieces reserved / sold.
-- **Passport**: story, fabric, live colour × size availability, then the **5 details** — preferences, mobile, size, location (GPS with permission *or* typed), colours — saved **only** with an unticked-by-default consent box (text + time stored).
+- **QR generator → lots**: pick a design, add colour × size × quantity lines; each piece gets a unique code (`MC-LP-014-4F2A9C`) stored as *in stock*, and a QR that opens `<site>/p/<code>`. Print labels as an A4 sheet, 50 × 70 mm hang tags or 50 × 25 mm stickers (print at 100%), or export a CSV for a label printer. A lot with sold pieces can't be deleted.
+- **Pieces**: every tagged piece with status (in stock / reserved / sold / retired), scans, distinct phones, last scan and leads. Filter, search, bulk-change status, print selected labels, export CSV. Each piece opens a drawer with its QR, a studio note and full history (created → reserved → sold → returned, plus every scan).
+- **Scan tags**: the portal's own scanner — phone camera (native `BarcodeDetector`, or jsQR on iPhone), a photo of a tag, or a USB/Bluetooth scanner typing into the code box. Modes: look up, mark sold (counter), mark reserved, back in stock, and **stock check** (scan the rack; it lists in-stock pieces not found and tags that are on the rack but marked sold). Portal scans are not counted as customer scans. The live camera needs https or localhost; the photo option works anywhere.
+- **Authenticity**: the passport tells the customer the tag is a **genuine** Mehfil piece, shows the studio's sale date once sold, and warns when a tag has been **retired** (damaged / lost / replaced). The portal flags a sold tag scanned on more than 6 phones in 30 days (possibly copied) and a retired tag that's still being scanned. Phones are counted with a random id the passport keeps in the browser — not linked to anyone.
+- **Passport**: story, fabric, live colour × size availability, then the **5 details** — preferences, mobile, size, location (GPS with permission *or* typed), colours — saved **only** with an unticked-by-default consent box (text + time stored). Owners of sold pieces also get care instructions and an alterations / care enquiry button.
 - **Leads**: filter, export CSV, **Send picks** (opens WhatsApp Business with recommendations matched on colour, occasion and size — you press send), mark contacted, delete on request.
-- **Dashboard**: scans, leads, scan → lead %, stock, orders; 14-day scans vs leads; colour, size, occasion and location breakdowns; designs by interest. “Load sample leads” adds DEMO-flagged rows for presentations and removes them in one click.
+- **Dashboard**: tags that need a look; QR tags (tagged, % scanned, stock split, most-scanned pieces); scans, leads, scan → lead %, stock, orders; 14-day scans vs leads; colour, size, occasion and location breakdowns; designs by interest. “Load sample leads” adds DEMO-flagged rows for presentations and removes them in one click.
 
-**Deploying with the API:** the API needs a Node host (Render, Railway, a VPS…): `npm run build && npm start`, with a persistent disk for `data/`. A static-only host (Cloudflare Pages / Workers assets) serves the website but not `/fitcheck` saving, passports or the portal.
+**Deploying with the API:** the API needs a Node host (Render, Railway, a VPS…): `npm run build && npm start`, with a persistent disk for `data/`. A static-only host (Cloudflare Pages / Workers assets) serves the website but not `/fitcheck` saving, passports or the portal. Run the ML service alongside it on the same machine (or set `ML_SERVICE_URL`); it needs ~2 GB RAM for PaddleOCR.
 
 ## Configuration
 

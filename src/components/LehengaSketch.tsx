@@ -104,11 +104,13 @@ type Props = {
   look: Look;
   /** Garment only (no dress form), cropped tight — used as the try-on lens overlay */
   bare?: boolean;
+  /** Fill the container's box (non-uniform scale) so the lens can lengthen the garment to the wearer */
+  stretch?: boolean;
   svgRef?: Ref<SVGSVGElement>;
   className?: string;
 };
 
-export function LehengaSketch({ look, bare = false, svgRef, className = "sketch" }: Props) {
+export function LehengaSketch({ look, bare = false, stretch = false, svgRef, className = "sketch" }: Props) {
   const p = `lk${useId().replace(/[^a-zA-Z0-9]/g, "")}-`;
   const lehenga = lehengaColours.find((c) => c.key === look.lehenga) ?? lehengaColours[0];
   const dupatta = dupattaColours.find((c) => c.key === look.dupatta);
@@ -130,6 +132,7 @@ export function LehengaSketch({ look, bare = false, svgRef, className = "sketch"
       ref={svgRef}
       className={className}
       viewBox={bare ? "20 80 360 630" : "0 0 400 720"}
+      preserveAspectRatio={stretch ? "none" : undefined}
       xmlns="http://www.w3.org/2000/svg"
       role="img"
       aria-label={bare ? "Lehenga illustration overlay" : "Illustration of the selected lehenga look on a dress form"}

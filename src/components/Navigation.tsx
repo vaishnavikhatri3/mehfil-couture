@@ -196,7 +196,7 @@ export function Navigation() {
                 }}
               >
                 <div className="mega__img frame">
-                  <Img photo={c.image} sizes="(min-width: 1100px) 22vw, 30vw" />
+                  <Img photo={c.image} zoomScale={1.6} sizes="(min-width: 1100px) 22vw, 30vw" />
                 </div>
                 <span className="label">No. {c.no} — {c.label}</span>
                 <span className="mega__title">
