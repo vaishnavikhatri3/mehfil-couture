@@ -1,0 +1,168 @@
+/* ========================================================= */
+/* MEHFIL TROUSSEAU HOMEPAGE SECTION STYLES                  */
+/* ========================================================= */
+
+.trousseau-sec {
+  padding-block: var(--section-y);
+  background: var(--paper);
+  border-bottom: 1px solid var(--line);
+  position: relative;
+  overflow: hidden;
+}
+
+.trousseau-sec__inner {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(2rem, 4vw, 3.5rem);
+}
+
+.trousseau-sec__head {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  max-width: 720px;
+}
+
+.trousseau-sec__dek {
+  font-size: clamp(1rem, 1.4vw, 1.15rem);
+  line-height: 1.6;
+  color: var(--ink-soft);
+  margin: 0;
+}
+
+.trousseau-sec__ribbon-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.trousseau-sec__events-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+}
+
+.t-event-card {
+  background: var(--paper-2);
+  border: 1px solid var(--line);
+  padding: 1.25rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: all 0.25s var(--ease-out);
+  position: relative;
+}
+
+.t-event-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--gold);
+  box-shadow: 0 10px 24px rgba(31, 22, 18, 0.08);
+}
+
+.t-event-card.omitted {
+  opacity: 0.6;
+}
+
+.t-event-card__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.t-event-icon {
+  font-size: 1.5rem;
+}
+
+.t-event-swatch {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.18);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.t-event-name {
+  margin: 0.25rem 0 0;
+  font-family: var(--display);
+  font-size: 1.1rem;
+  font-weight: 400;
+  color: var(--ink);
+  line-height: 1.25;
+}
+
+.t-event-vibe {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: var(--ink-soft);
+}
+
+.t-event-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: auto;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--line-soft);
+}
+
+.t-event-lead {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: var(--gold);
+}
+
+.t-event-action {
+  font-family: var(--sans);
+  font-size: 0.75rem;
+  color: var(--maroon);
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.trousseau-sec__score-strip {
+  background: var(--paper-2);
+  border: 1px solid var(--line);
+  padding: 1rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.score-pill,
+.timeline-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+}
+
+.score-pill strong {
+  color: var(--maroon);
+}
+
+.btn--gold-sec {
+  background: var(--ink);
+  color: var(--paper);
+  border: none;
+  padding: 0.65rem 1.25rem;
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s var(--ease-out);
+}
+
+.btn--gold-sec:hover {
+  background: var(--maroon);
+  transform: translateY(-1px);
+}
