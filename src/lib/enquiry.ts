@@ -44,8 +44,8 @@ export async function openEnquiry(message: string, source: string) {
   const copied = await copyText(message);
   toast(
     copied
-      ? "Your message is copied — paste it into our Instagram DM that just opened."
-      : "Opening our Instagram DM — tell us your occasion and we'll take it from there.",
+      ? "📋 Message copied to clipboard! Click in the Instagram chat box and press Ctrl + V (Paste)."
+      : "Opening Instagram DM — please paste your message into the chat.",
   );
   window.open(brand.instagram.dm, "_blank", "noopener");
 }

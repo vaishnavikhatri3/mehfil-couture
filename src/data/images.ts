@@ -38,7 +38,7 @@ export const photos = {
   teal: ph("1619715613791-89d35b51ff81", "A woman in a teal lehenga seated in an old stone window", "Sabesh Photography LTD", "60% 50%"),
   ivory: ph("1729146768775-3662af38016e", "A woman in an ivory embroidered blouse and drape with a pearl necklace", "The Behruz Theory", "50% 30%"),
   ivoryGold: ph("1601432093209-8af1fd74b054", "A woman in an ivory and gold outfit adjusts her maang tikka", "Bernie Almanzar", "40% 30%"),
-  mustard: ph("1574847872646-abff244bbd87", "A woman in a mustard skirt and white blouse with a blush dupatta against a cobalt wall", "Kunal Goswami", "50% 40%"),
+  mustard: ph("1610047881689-fc68ff7b2a89", "A bride in an opulent handcrafted all-gold embroidered couture lehenga with sheer veil", "Bulbul Ahmed", "50% 25%"),
   gowns: ph("1756483509254-3cc48a5a15b2", "Two women in embroidered navy and wine indo-western gowns", "iKshana Productions", "50% 35%"),
   navyGown: ph("1610202631408-fa6ba0f39ca3", "A woman in a navy and gold embroidered indo-western gown", "Bulbul Ahmed", "50% 40%"),
   festiveDuo: ph("1713296008556-29c7fae52234", "Two women in black, red and mirror-work festive outfits lounge among diyas", "Ardy Arjun", "50% 45%"),
