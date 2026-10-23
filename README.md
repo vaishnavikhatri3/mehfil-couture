@@ -13,7 +13,7 @@ npm run build      # type-check + production build → dist/
 npm run preview    # serve the production build
 ```
 
-It's a single-page app with real routes (`/journal/:slug`, `/privacy`), so unknown paths must serve `index.html`.
+As a Single-Page Application (SPA) handling dynamic client-side routing (`/journal/:slug`, `/privacy`), all fallback and unmapped server paths must rewrite upstream to `index.html` to allow React Router to gracefully resolve deep links.
 
 **Deploy to Cloudflare:** `npm run build && npx wrangler deploy` (config in `wrangler.jsonc`, SPA fallback included). `vercel.json` covers Vercel; on other hosts add an equivalent rewrite.
 
@@ -62,7 +62,8 @@ The floating **Try-on lens** button (bottom-left on every page, and “Try it on
 
 Privacy: the photo is read with an object URL and composited on a canvas **entirely in the browser**; nothing is uploaded or stored, and the URL is revoked when the lens closes.
 
-A realistic AI try-on would need a paid virtual try-on API (e.g. FASHN, fal.ai IDM-VTON) called from a server-side Worker so the API key stays secret, plus real Mehfil product photos as the garment input.
+A realistic AI try-on woul
+d need a paid virtual try-on API (e.g. FASHN, fal.ai IDM-VTON) called from a server-side Worker so the API key stays secret, plus real Mehfil product photos as the garment input.
 
 ## Motion & accessibility notes
 
