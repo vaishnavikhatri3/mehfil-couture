@@ -84,7 +84,7 @@ export function CollectionEditorial() {
 
         <aside className="craft" aria-label="Handcrafted">
           <div className="craft__img frame" data-clip>
-            <Img photo={photos.zariWide} sizes="(min-width: 900px) 40vw, 100vw" />
+            <Img photo={photos.zariWide} zoom="lens" sizes="(min-width: 900px) 40vw, 100vw" />
           </div>
           <div className="craft__text">
             <Motif size={64} className="craft__motif" />

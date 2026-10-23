@@ -1,23 +1,25 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { ArrowRight, Download, ImagePlus, Move, RotateCcw, ScanFace, Share2, ShieldCheck, X } from "lucide-react";
+import { ArrowRight, Download, ImagePlus, Move, RotateCcw, ScanFace, ScanLine, Share2, ShieldCheck, X } from "lucide-react";
 import { blouseStyles, defaultLook, dupattaColours, embroideryMoods, lehengaColours, type Look } from "../data/mixmatch";
 import { OPEN_LENS } from "../lib/lensBus";
 import { openEnquiry } from "../lib/enquiry";
 import { toast } from "../lib/toast";
 import { track } from "../lib/analytics";
+import { scanBody, type Fit } from "../lib/pose";
 import { LehengaSketch } from "./LehengaSketch";
 import "./TryOnLens.css";
 
 /**
  * Try-on Lens — a playful styling OVERLAY, not a realistic virtual try-on.
  * The visitor's photo is read locally via an object URL: it is never uploaded,
- * stored or sent anywhere, and is released when the lens closes.
+ * stored or sent anywhere, and is released when the lens closes. A pose scan
+ * (also in-browser) fits the overlay from neck to toe.
  */
 
 type Photo = { url: string; w: number; h: number };
-type Fit = { x: number; y: number; scale: number; rotate: number; opacity: number };
+type Scan = "idle" | "scanning" | "fitted" | "manual";
 
-const DEFAULT_FIT: Fit = { x: 0.5, y: 0.6, scale: 0.6, rotate: 0, opacity: 0.92 };
+const DEFAULT_FIT: Fit = { x: 0.5, y: 0.6, scale: 0.6, rotate: 0, opacity: 0.92, stretch: 1 };
 const VB = { w: 360, h: 630 }; // bare sketch viewBox
 const MAX_BYTES = 15 * 1024 * 1024;
 const clamp = (v: number, a: number, b: number) => Math.min(b, Math.max(a, v));
@@ -31,6 +33,9 @@ export function TryOnLens() {
   const [error, setError] = useState("");
   const [box, setBox] = useState({ w: 0, h: 0 });
   const [busy, setBusy] = useState(false);
+  const [scan, setScan] = useState<Scan>("idle");
+  const [autoFit, setAutoFit] = useState<Fit | null>(null);
+  const scanId = useRef(0);
 
   const stageRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
@@ -59,11 +64,14 @@ export function TryOnLens() {
 
   // Release the photo from memory on close — nothing persists
   const clearPhoto = useCallback(() => {
+    scanId.current++;
     setPhoto((p) => {
       if (p) URL.revokeObjectURL(p.url);
       return null;
     });
     setFit(DEFAULT_FIT);
+    setAutoFit(null);
+    setScan("idle");
   }, []);
 
   const close = useCallback(() => {
@@ -138,7 +146,25 @@ export function TryOnLens() {
         return { url, w: img.naturalWidth, h: img.naturalHeight };
       });
       setFit(DEFAULT_FIT);
+      setAutoFit(null);
       track("lens_photo_added");
+
+      // Scan neck to toe and fit the lehenga to the body
+      const id = ++scanId.current;
+      setScan("scanning");
+      scanBody(img)
+        .then((f) => {
+          if (id !== scanId.current) return;
+          if (f) {
+            setFit(f);
+            setAutoFit(f);
+          }
+          setScan(f ? "fitted" : "manual");
+          track("lens_autofit", { found: !!f });
+        })
+        .catch(() => {
+          if (id === scanId.current) setScan("manual");
+        });
     };
     img.onerror = () => {
       URL.revokeObjectURL(url);
@@ -223,7 +249,7 @@ export function TryOnLens() {
     try {
       const overlay = await load(svgUrl);
       const ow = fit.scale * cw;
-      const oh = (ow * VB.h) / VB.w;
+      const oh = (ow * VB.h * fit.stretch) / VB.w;
       ctx.save();
       ctx.globalAlpha = fit.opacity;
       ctx.translate(fit.x * cw, fit.y * ch);
@@ -345,6 +371,7 @@ export function TryOnLens() {
                         left: `${fit.x * 100}%`,
                         top: `${fit.y * 100}%`,
                         width: `${fit.scale * 100}%`,
+                        aspectRatio: `${VB.w} / ${VB.h * fit.stretch}`,
                         opacity: fit.opacity,
                         transform: `translate(-50%, -50%) rotate(${fit.rotate}deg)`,
                       }}
@@ -354,10 +381,31 @@ export function TryOnLens() {
                       onPointerCancel={onPointerUp}
                       onKeyDown={onOverlayKey}
                     >
-                      <LehengaSketch look={look} bare svgRef={svgRef} className="lens__svg" />
+                      <LehengaSketch look={look} bare stretch svgRef={svgRef} className="lens__svg lens__svg--fill" />
                     </div>
-                    <span className="lens__hint label">
-                      <Move size={12} /> Drag · pinch or scroll to resize
+                    {scan === "scanning" && (
+                      <div className="lens__scan" aria-hidden="true">
+                        <span className="lens__scan-line" />
+                      </div>
+                    )}
+                    <span className="lens__hint label" role="status">
+                      {scan === "scanning" ? (
+                        <>
+                          <ScanLine size={12} /> Scanning neck to toe…
+                        </>
+                      ) : scan === "fitted" ? (
+                        <>
+                          <Move size={12} /> Fitted to you · drag or resize to adjust
+                        </>
+                      ) : scan === "manual" ? (
+                        <>
+                          <Move size={12} /> Couldn't find a full figure · drag to place it
+                        </>
+                      ) : (
+                        <>
+                          <Move size={12} /> Drag · pinch or scroll to resize
+                        </>
+                      )}
                     </span>
                   </div>
                 ) : (
@@ -392,8 +440,8 @@ export function TryOnLens() {
               {/* Controls */}
               <div className="lens__controls">
                 <p className="lens__privacy">
-                  <ShieldCheck size={16} /> Your photo stays on your device. It's never uploaded or stored, and it's cleared when you
-                  close the lens.
+                  <ShieldCheck size={16} /> Your photo stays on your device. The body scan runs in your browser — the photo is never
+                  uploaded or stored, and it's cleared when you close the lens.
                 </p>
 
                 <fieldset className="lens__group">
@@ -463,6 +511,16 @@ export function TryOnLens() {
                       />
                     </label>
                     <label>
+                      <span>Length</span>
+                      <input
+                        type="range"
+                        min={60}
+                        max={180}
+                        value={Math.round(fit.stretch * 100)}
+                        onChange={(e) => setFit((f) => ({ ...f, stretch: +e.target.value / 100 }))}
+                      />
+                    </label>
+                    <label>
                       <span>Tilt</span>
                       <input type="range" min={-20} max={20} value={fit.rotate} onChange={(e) => setFit((f) => ({ ...f, rotate: +e.target.value }))} />
                     </label>
@@ -477,8 +535,8 @@ export function TryOnLens() {
                       />
                     </label>
                     <div className="lens__row">
-                      <button type="button" className="mm__tool" onClick={() => setFit(DEFAULT_FIT)}>
-                        <RotateCcw size={16} /> Reset fit
+                      <button type="button" className="mm__tool" onClick={() => setFit(autoFit ?? DEFAULT_FIT)}>
+                        <RotateCcw size={16} /> {autoFit ? "Re-fit to me" : "Reset fit"}
                       </button>
                       <button type="button" className="mm__tool" onClick={() => fileRef.current?.click()}>
                         <ImagePlus size={16} /> Change photo

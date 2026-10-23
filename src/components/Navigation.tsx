@@ -177,6 +177,9 @@ export function Navigation() {
                 </a>
               ),
             )}
+            <Link to="/fitcheck" className="nav__link" onClick={() => setMega(false)}>
+              Measure Me
+            </Link>
           </nav>
           <button type="button" className="nav__cta" onClick={() => generalEnquiry()}>
             <span>Enquire</span>
@@ -219,7 +222,7 @@ export function Navigation() {
                 }}
               >
                 <div className="mega__img frame">
-                  <Img photo={c.image} sizes="(min-width: 1100px) 22vw, 30vw" />
+                  <Img photo={c.image} zoomScale={1.6} sizes="(min-width: 1100px) 22vw, 30vw" />
                 </div>
                 <span className="label">No. {c.no} — {c.label}</span>
                 <span className="mega__title">
@@ -301,6 +304,10 @@ export function Navigation() {
               {l.label}
             </a>
           ))}
+          <Link to="/fitcheck" onClick={() => setMobile(false)} style={{ transitionDelay: mobile ? "450ms" : "0ms" }}>
+            <span className="mmenu__no">08</span>
+            Measure Me
+          </Link>
         </nav>
         <div className="mmenu__foot">
           <button

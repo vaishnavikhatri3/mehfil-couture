@@ -75,6 +75,9 @@ export function Footer() {
                   Our Story
                 </a>
               </li>
+              <li>
+                <Link to="/fitcheck">Measure Me · FitCheck</Link>
+              </li>
             </ul>
           </div>
           <div className="foot__col">
@@ -121,6 +124,7 @@ export function Footer() {
           </span>
           <div className="foot__legal">
             <Link to="/privacy">Privacy &amp; terms</Link>
+            <Link to="/admin">Studio portal</Link>
             <button type="button" onClick={() => setCredits((c) => !c)} aria-expanded={credits} aria-controls="photo-credits">
               Photo credits
             </button>

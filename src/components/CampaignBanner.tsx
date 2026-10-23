@@ -15,7 +15,7 @@ export function CampaignBanner() {
   return (
     <section className="camp" aria-labelledby="camp-title">
       <div className="camp__media" data-clip>
-        <Img photo={photos.lightsBride} sizes="100vw" q={76} className="img-cover camp__img" />
+        <Img photo={photos.lightsBride} sizes="100vw" q={76} zoomScale={1.4} className="img-cover camp__img" />
       </div>
       <div className="camp__veil" aria-hidden="true" />
       <div className="wrap camp__inner">

@@ -1,0 +1,63 @@
+/* ───────── Zoomable image (components/ImageZoom) ─────────
+   The shell takes the image's slot exactly (every slot is a sized frame with
+   an img-cover inside), so wrapping changes nothing at rest. */
+
+.zoom {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+.zoom__pane {
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform-origin: 0 0;
+}
+.zoom.is-zooming .zoom__pane {
+  will-change: transform;
+}
+.zoom:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: -4px;
+}
+
+.zoom-zone {
+  cursor: zoom-in;
+}
+.zoom-zone.is-lensing {
+  cursor: none;
+}
+
+/* Magnifier: a quiet ivory ring with a hairline of gold */
+.zoom__lens {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  border-radius: 50%;
+  pointer-events: none;
+  background-color: var(--paper-2);
+  background-repeat: no-repeat;
+  border: 1.5px solid rgba(251, 246, 238, 0.92);
+  box-shadow:
+    0 0 0 1px rgba(185, 138, 61, 0.55),
+    0 22px 48px -18px rgba(31, 22, 18, 0.6);
+  opacity: 0;
+  scale: 0.86;
+  transition:
+    opacity 240ms ease,
+    scale 320ms var(--ease-out);
+}
+.zoom__lens.is-on {
+  opacity: 1;
+  scale: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .zoom__lens {
+    scale: 1;
+    transition: opacity 160ms ease;
+  }
+}
