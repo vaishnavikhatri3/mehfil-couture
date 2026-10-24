@@ -1,0 +1,390 @@
+/* ==========================================================================
+   Mehfil Privé — Royal Digital Access Card (Marketing & Loyalty Pass)
+   ========================================================================== */
+
+/* Floating trigger pill on bottom-right (above enquiry) */
+.prive-pill {
+  position: fixed;
+  right: calc(18px + env(safe-area-inset-right));
+  bottom: calc(80px + env(safe-area-inset-bottom));
+  z-index: 55;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 42px;
+  padding: 0 16px 0 12px;
+  border-radius: 999px;
+  background: var(--maroon);
+  color: var(--paper);
+  border: 1px solid var(--gold-deep);
+  box-shadow: 0 12px 30px -8px rgba(74, 16, 16, 0.55);
+  cursor: pointer;
+  transition: all 220ms ease;
+  animation: prive-float 3s ease-in-out infinite alternate;
+}
+@keyframes prive-float {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-4px); }
+}
+.prive-pill:hover {
+  background: #2b0b0b;
+  transform: scale(1.03) translateY(-2px);
+  box-shadow: 0 16px 36px -8px rgba(74, 16, 16, 0.7);
+}
+.prive-pill__icon {
+  color: var(--gold-soft);
+}
+.prive-pill__text {
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 600px) {
+  .prive-pill {
+    bottom: calc(72px + env(safe-area-inset-bottom));
+    height: 38px;
+    padding: 0 12px;
+    font-size: 10.5px;
+  }
+}
+
+/* Modal */
+.prive-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 250;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+}
+.prive-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(16, 8, 7, 0.85);
+  backdrop-filter: blur(10px);
+}
+.prive-modal__container {
+  position: relative;
+  width: min(580px, 100%);
+  max-height: calc(100dvh - 36px);
+  overflow-y: auto;
+  background: var(--paper);
+  border-radius: 12px;
+  padding: clamp(24px, 4vw, 36px);
+  box-shadow: 0 40px 90px -20px rgba(0, 0, 0, 0.75);
+  border: 1px solid rgba(216, 178, 116, 0.4);
+}
+.prive-modal__close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: all 180ms ease;
+}
+.prive-modal__close:hover {
+  border-color: var(--maroon);
+  color: var(--maroon);
+}
+
+/* Onboarding */
+.prive-onboard {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  text-align: center;
+}
+.prive-onboard__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 auto;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--gold-tint);
+  border: 1px solid rgba(216, 178, 116, 0.5);
+  color: var(--maroon);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.prive-onboard__title {
+  margin: 0;
+  font-family: var(--display);
+  font-size: clamp(1.85rem, 2.8vw, 2.3rem);
+  line-height: 1.15;
+  color: var(--ink);
+}
+.prive-onboard__title em {
+  color: var(--maroon);
+}
+.prive-onboard__desc {
+  margin: 0 auto;
+  max-width: 440px;
+  font-size: 13.5px;
+  color: var(--ink-soft);
+  line-height: 1.55;
+}
+
+/* Form */
+.prive-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 6px;
+  text-align: left;
+}
+.prive-form__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.prive-form__field label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+.prive-form__field input,
+.prive-form__field select {
+  height: 46px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--paper-warm);
+  color: var(--ink);
+  font-size: 13.5px;
+  outline: none;
+  transition: border-color 180ms ease;
+}
+.prive-form__field input:focus,
+.prive-form__field select:focus {
+  border-color: var(--maroon);
+}
+
+.prive-btn-gold {
+  background: linear-gradient(135deg, #d8b274 0%, #b98a3d 100%);
+  color: #1a0a08;
+  font-weight: 600;
+  border: none;
+  min-height: 48px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 12px;
+  box-shadow: 0 8px 24px -6px rgba(185, 138, 61, 0.45);
+}
+.prive-btn-gold:hover {
+  background: linear-gradient(135deg, #e5c48b 0%, #c99849 100%);
+  color: #1a0a08;
+}
+
+.prive-perks-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+.prive-perk {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--ink-soft);
+}
+.prive-perk svg {
+  color: var(--gold-deep);
+  flex: none;
+}
+.prive-privacy-note {
+  margin: -5px 0 0;
+  color: var(--ink-muted);
+  font-size: 11px;
+  line-height: 1.45;
+  text-align: center;
+}
+
+/* ==========================================================================
+   The Physical-feeling Royal Digital Card
+   ========================================================================== */
+
+.prive-card-view {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.prive-card-view__head {
+  text-align: center;
+}
+.prive-card-view__head h3 {
+  margin: 4px 0 0;
+  font-family: var(--display);
+  font-size: 1.6rem;
+  color: var(--ink);
+}
+
+.royal-card {
+  position: relative;
+  border-radius: 14px;
+  padding: 26px 28px;
+  background: linear-gradient(145deg, #2c120e 0%, #4a1a15 50%, #1a0806 100%);
+  border: 2px solid var(--gold-soft);
+  box-shadow: 0 24px 60px -12px rgba(40, 10, 8, 0.65), inset 0 0 0 1px rgba(255, 255, 255, 0.15);
+  color: var(--paper);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  overflow: hidden;
+}
+.royal-card__shimmer {
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    45deg,
+    transparent 45%,
+    rgba(216, 178, 116, 0.15) 50%,
+    transparent 55%
+  );
+  pointer-events: none;
+  animation: card-shimmer 6s infinite;
+}
+@keyframes card-shimmer {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.royal-card__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.royal-card__brand {
+  display: flex;
+  flex-direction: column;
+}
+.royal-card__logo {
+  font-family: var(--display);
+  font-style: italic;
+  font-size: 2.1rem;
+  line-height: 1;
+  color: var(--gold-soft);
+}
+.royal-card__sub {
+  font-size: 9.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(251, 246, 238, 0.7);
+  margin-top: 3px;
+}
+.royal-card__code-box {
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+}
+.royal-card__code-lbl {
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: var(--gold-soft);
+}
+.royal-card__code-val {
+  font-family: monospace;
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.08em;
+}
+
+.royal-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.royal-card__prefix {
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(216, 178, 116, 0.85);
+}
+.royal-card__name {
+  margin: 0;
+  font-family: var(--display);
+  font-size: clamp(1.6rem, 3.5vw, 2.1rem);
+  font-weight: 350;
+  color: #fff;
+  letter-spacing: -0.01em;
+}
+.royal-card__occasion {
+  font-size: 11.5px;
+  color: var(--gold-soft);
+}
+
+.royal-card__bottom {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding-top: 14px;
+  border-top: 1px solid rgba(216, 178, 116, 0.35);
+}
+.royal-card__benefit {
+  display: flex;
+  flex-direction: column;
+}
+.royal-card__benefit-amount {
+  font-family: var(--display);
+  font-size: 1.6rem;
+  font-weight: 600;
+  color: #fce8bd;
+  line-height: 1;
+}
+.royal-card__benefit-txt {
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: rgba(251, 246, 238, 0.8);
+  margin-top: 4px;
+}
+.royal-card__qr-icon {
+  color: var(--gold-soft);
+  opacity: 0.9;
+}
+.royal-card__qr img {
+  display: block;
+  width: 72px;
+  height: 72px;
+  padding: 4px;
+  border-radius: 4px;
+  background: #fff;
+}
+
+.prive-card-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.prive-reset-btn {
+  border: 0;
+  background: transparent;
+  color: var(--ink-muted);
+  font-size: 11px;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 4px;
+}
+.prive-reset-btn:hover {
+  color: var(--maroon);
+}

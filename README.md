@@ -45,6 +45,7 @@ The project has three parts:
 | 10 | **QR digital passport** (`/p/:code`) | Every piece gets a unique QR tag. Scanning it shows the outfit's story, fabric, care, live stock and an authenticity check. Customers can choose to share 5 details for recommendations. | `src/pages/Passport.tsx` |
 | 11 | **Studio portal** (`/admin`) | Dashboard, designs, QR generator, pieces, tag scanner, leads, FitCheck orders and size charts. Protected by a passcode. | `src/pages/admin/` |
 | 12 | **ML service** (optional) | A Python service with two models: an **Isolation Forest** that spots strange measurement sets, and **PaddleOCR** that reads tailor cards. | `ml/` |
+| 13 | **Digital visiting card** | A personalized, downloadable Mehfil card with a working QR link, collection discovery, studio directions and sharing actions. The name stays in the current browser visit; no discount or customer contact details are collected. | `src/components/DigitalEntryCard.tsx` |
 
 ---
 

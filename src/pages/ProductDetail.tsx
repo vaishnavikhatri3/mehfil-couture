@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   BadgeCheck,
   Check,
+  ChevronLeft,
+  ChevronRight,
   Eye,
   Heart,
   Layers,
@@ -19,6 +21,7 @@ import {
   Video,
 } from "lucide-react";
 import { heroProduct } from "../data/productData";
+import { brand } from "../config/brand";
 import { openEnquiry } from "../lib/enquiry";
 import { openPassport } from "../lib/passportBus";
 import { openLens } from "../lib/lensBus";
@@ -35,6 +38,7 @@ export default function ProductDetail() {
   const [activeTab, setActiveTab] = useState<"specs" | "pieces" | "rationale" | "care">("specs");
   const [liked, setLiked] = useState(false);
   const [showVideoModal, setShowVideoModal] = useState(false);
+  const [reelIdx, setReelIdx] = useState(0);
 
   usePageMeta(
     `${p.name} (₹25,000) — Mehfil Couture`,
@@ -42,6 +46,15 @@ export default function ProductDetail() {
   );
 
   const activeImage = p.gallery[activeImageIdx];
+
+  // Auto-cycle reel slides when video modal is open
+  useEffect(() => {
+    if (!showVideoModal) return;
+    const timer = setInterval(() => {
+      setReelIdx((i) => (i + 1) % p.gallery.length);
+    }, 3200);
+    return () => clearInterval(timer);
+  }, [showVideoModal, p.gallery.length]);
 
   const handleOrderWhatsApp = () => {
     track("product_whatsapp_click", { sku: p.sku, orderType });
@@ -110,7 +123,7 @@ export default function ProductDetail() {
         {/* Left Column: Studio Gallery & Video Tour */}
         <div className="product-page__visuals">
           <div className="product-gallery">
-            {/* Main Stage Image */}
+            {/* Main Stage Image with High-Res Frame */}
             <div className="product-gallery__main">
               <span className="product-gallery__badge">
                 <BadgeCheck size={14} /> Indore Atelier Verified
@@ -151,9 +164,9 @@ export default function ProductDetail() {
                   <Play size={20} />
                 </div>
                 <div>
-                  <h4 className="product-video-card__title">Cinematic Studio Video Walkthrough</h4>
+                  <h4 className="product-video-card__title">Studio Photo Walkthrough</h4>
                   <p className="product-video-card__desc">
-                    Inspect the bottle-green zardozi sweetheart blouse, 4.5m flare movement, and golden organza dupatta under real light.
+                    Explore the ensemble and embroidery in detail. Ask us for a live studio video tour.
                   </p>
                 </div>
               </div>
@@ -162,7 +175,7 @@ export default function ProductDetail() {
                 className="btn btn--ghost product-video-card__btn"
                 onClick={() => setShowVideoModal(true)}
               >
-                <Video size={15} /> Watch Studio Reel
+                <Eye size={15} /> Explore Studio Photos
               </button>
             </div>
 
@@ -510,13 +523,13 @@ export default function ProductDetail() {
         </div>
       </section>
 
-      {/* Video Modal Walkthrough */}
+      {/* Interactive studio photo tour; a dedicated reel can be added when supplied. */}
       {showVideoModal && (
-        <div className="product-video-modal" role="dialog" aria-modal="true" aria-label="Studio Video Walkthrough">
+        <div className="product-video-modal" role="dialog" aria-modal="true" aria-label="Studio Photo Walkthrough">
           <div className="product-video-modal__backdrop" onClick={() => setShowVideoModal(false)} />
           <div className="product-video-modal__box">
             <header className="product-video-modal__head">
-              <h3>Mehfil Couture Atelier Reel · {p.name}</h3>
+              <h3>Mehfil Couture Studio Photos · {p.name}</h3>
               <button
                 type="button"
                 className="btn btn--ghost"
@@ -526,30 +539,65 @@ export default function ProductDetail() {
               </button>
             </header>
             <div className="product-video-modal__body">
-              <video
-                controls
-                autoPlay
-                playsInline
-                className="product-video-modal__player"
-                poster="/images/pieces/mayuri/mayuri-front-full.jpg"
-              >
-                <source src="/videos/festive-statement-walkthrough.mp4" type="video/mp4" />
-                Your browser does not support the video tag.
-              </video>
+              {/* Interactive Studio Reel Slideshow with Ken Burns effect */}
+              <div className="reel-viewer">
+                <img
+                  src={p.gallery[reelIdx].src}
+                  alt={p.gallery[reelIdx].label}
+                  className="reel-viewer__img"
+                />
+                <div className="reel-viewer__controls">
+                  <button
+                    type="button"
+                    className="reel-nav-btn"
+                    onClick={() => setReelIdx((i) => (i - 1 + p.gallery.length) % p.gallery.length)}
+                    aria-label="Previous view"
+                  >
+                    <ChevronLeft size={18} />
+                  </button>
+                  <span className="reel-viewer__pill">
+                    {p.gallery[reelIdx].label} ({reelIdx + 1}/{p.gallery.length})
+                  </span>
+                  <button
+                    type="button"
+                    className="reel-nav-btn"
+                    onClick={() => setReelIdx((i) => (i + 1) % p.gallery.length)}
+                    aria-label="Next view"
+                  >
+                    <ChevronRight size={18} />
+                  </button>
+                </div>
+              </div>
+
               <div className="product-video-modal__note">
                 <p>
-                  Direct unedited studio video showing real fabric drape, natural light colour tones, and zardozi sparkle at our South Tukoganj studio in Indore.
+                  Studio photos of this piece. For a live video view in natural light, request a tour from our South Tukoganj studio.
                 </p>
-                <button
-                  type="button"
-                  className="btn"
-                  onClick={() => {
-                    setShowVideoModal(false);
-                    handleOrderWhatsApp();
-                  }}
-                >
-                  <MessageCircle size={16} /> Enquire About This Piece (₹25,000)
-                </button>
+                <div className="product-video-modal__actions">
+                  <a
+                    href={brand.instagram.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn--ghost"
+                  >
+                    <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                      <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                      <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+                    </svg>{" "}
+                    Watch Reels on @mehfil.couture
+                  </a>
+                  <button
+                    type="button"
+                    className="btn"
+                    onClick={() => {
+                      setShowVideoModal(false);
+                      handleOrderWhatsApp();
+                    }}
+                  >
+                    <MessageCircle size={16} /> Request Studio Video Tour (WhatsApp)
+                  </button>
+                </div>
               </div>
             </div>
           </div>

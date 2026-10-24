@@ -10,6 +10,7 @@ import { TryOnLens } from "./components/TryOnLens";
 import { ZoomViewer } from "./components/ZoomViewer";
 import { MeasurementPassport } from "./components/MeasurementPassport";
 import { TrousseauPlanner } from "./components/TrousseauPlanner";
+import { DigitalEntryCard } from "./components/DigitalEntryCard";
 import Home from "./pages/Home";
 import Article from "./pages/Article";
 import Privacy from "./pages/Privacy";
@@ -48,6 +49,7 @@ function Layout() {
       <MeasurementPassport />
       {!isTool && <TryOnLens />}
       <WhatsAppButton />
+      <DigitalEntryCard />
       <ConsentBanner />
       <Toaster />
       <ZoomViewer />
