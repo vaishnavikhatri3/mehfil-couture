@@ -450,3 +450,29 @@ body:has(.mmenu[data-open="true"]) .nav__cta {
   color: var(--gold);
 }
 
+
+
+/* Hero Product Highlight Pill in Navbar */
+.nav__link--hero {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--maroon) !important;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--gold-tint);
+  border: 1px solid rgba(216, 178, 116, 0.4);
+  transition: all 180ms ease;
+}
+.nav__link--hero:hover {
+  background: var(--maroon);
+  color: var(--paper) !important;
+  border-color: var(--maroon);
+}
+.nav__hero-sparkle {
+  color: var(--gold-deep);
+}
+.nav__link--hero:hover .nav__hero-sparkle {
+  color: var(--gold-soft);
+}

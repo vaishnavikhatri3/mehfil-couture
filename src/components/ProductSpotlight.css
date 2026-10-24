@@ -1,0 +1,269 @@
+/* ==========================================================================
+   Mehfil Couture — Homepage Product Spotlight Section (Hero Product ₹25k)
+   ========================================================================== */
+
+.spotlight {
+  padding-top: clamp(48px, 6vw, 84px);
+  padding-bottom: clamp(48px, 6vw, 84px);
+}
+
+.spotlight__card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  gap: clamp(28px, 4vw, 56px);
+  align-items: center;
+  padding: clamp(24px, 4vw, 44px);
+  background: var(--paper-warm);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 24px 60px -20px rgba(40, 14, 10, 0.15);
+  position: relative;
+  overflow: hidden;
+}
+
+.spotlight__card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 240px;
+  height: 240px;
+  background: radial-gradient(circle, rgba(216, 178, 116, 0.18) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+/* Media Box */
+.spotlight__media {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.spotlight__img-link {
+  position: relative;
+  display: block;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #180f0d;
+  aspect-ratio: 3 / 4;
+  box-shadow: 0 16px 36px -12px rgba(40, 14, 10, 0.3);
+}
+.spotlight__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 20%;
+  display: block;
+  transition: transform 450ms var(--ease-out);
+}
+.spotlight__img-link:hover .spotlight__img {
+  transform: scale(1.03);
+}
+
+.spotlight__badge {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: rgba(20, 10, 8, 0.85);
+  backdrop-filter: blur(8px);
+  color: var(--gold-soft);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border: 1px solid rgba(216, 178, 116, 0.35);
+}
+
+.spotlight__media-hover {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(20, 10, 8, 0.45);
+  opacity: 0;
+  transition: opacity 220ms ease;
+}
+.spotlight__media-hover span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: var(--paper);
+  color: var(--maroon);
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transform: translateY(6px);
+  transition: transform 220ms ease;
+}
+.spotlight__img-link:hover .spotlight__media-hover {
+  opacity: 1;
+}
+.spotlight__img-link:hover .spotlight__media-hover span {
+  transform: translateY(0);
+}
+
+/* Thumbs */
+.spotlight__thumbs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.spotlight__thumb {
+  position: relative;
+  border-radius: 6px;
+  overflow: hidden;
+  aspect-ratio: 1;
+  border: 1px solid var(--line);
+  display: block;
+  text-decoration: none;
+  transition: all 180ms ease;
+}
+.spotlight__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.spotlight__thumb span {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 3px 4px;
+  background: rgba(20, 10, 8, 0.85);
+  color: var(--paper);
+  font-size: 9px;
+  text-align: center;
+  font-weight: 500;
+}
+.spotlight__thumb:hover {
+  border-color: var(--maroon);
+  transform: translateY(-2px);
+}
+
+/* Content Details */
+.spotlight__content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.spotlight__tag-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.spotlight__location {
+  font-size: 11px;
+  color: var(--ink-muted);
+}
+.spotlight__title {
+  margin: 0;
+  font-family: var(--display);
+  font-size: clamp(2rem, 3vw, 2.75rem);
+  font-weight: 350;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+  color: var(--ink);
+}
+.spotlight__title em {
+  color: var(--maroon);
+  font-style: italic;
+}
+.spotlight__quote {
+  margin: -4px 0 0;
+  font-family: var(--display);
+  font-style: italic;
+  font-size: 1.15rem;
+  color: var(--gold-deep);
+}
+.spotlight__tagline {
+  margin: 0;
+  font-size: 14px;
+  color: var(--ink-soft);
+  line-height: 1.6;
+}
+
+/* Features Pill List */
+.spotlight__features-list {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  padding: 16px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.spotlight__feature {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.spotlight__feature strong {
+  font-family: var(--display);
+  font-size: 1.35rem;
+  color: var(--maroon);
+}
+.spotlight__feature span {
+  font-size: 11px;
+  color: var(--ink-soft);
+  line-height: 1.35;
+}
+
+/* Actions */
+.spotlight__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.spotlight__btn-main {
+  font-size: 12.5px;
+  min-height: 50px;
+  letter-spacing: 0.1em;
+}
+.spotlight__btn-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.spotlight__btn-row .btn {
+  font-size: 11px;
+  min-height: 44px;
+}
+
+/* Guarantee footer */
+.spotlight__guarantee {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11.5px;
+  color: var(--ink-muted);
+  line-height: 1.45;
+}
+.spotlight__guarantee-icon {
+  flex: none;
+  color: var(--gold-deep);
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .spotlight__card {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 550px) {
+  .spotlight__features-list {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .spotlight__btn-row {
+    grid-template-columns: 1fr;
+  }
+}

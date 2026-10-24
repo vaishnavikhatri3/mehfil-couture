@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { HeroSection } from "../components/HeroSection";
 import { CollectionEditorial } from "../components/CollectionEditorial";
+import { ProductSpotlight } from "../components/ProductSpotlight";
 import { LehengaReveal } from "../components/LehengaReveal";
 import { OccasionExplorer } from "../components/OccasionExplorer";
 import { TrousseauSection } from "../components/TrousseauSection";
@@ -35,6 +36,7 @@ export default function Home() {
     <main id="main" ref={main}>
       <HeroSection />
       <CollectionEditorial />
+      <ProductSpotlight />
       <LehengaReveal />
       <OccasionExplorer />
       <TrousseauSection />

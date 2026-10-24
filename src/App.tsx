@@ -15,11 +15,12 @@ import Article from "./pages/Article";
 import Privacy from "./pages/Privacy";
 import NotFound from "./pages/NotFound";
 
-// New tools load on demand so the homepage stays light
+// New tools & pages load on demand so the homepage stays light
 const FitCheck = lazy(() => import("./pages/FitCheck"));
 const Passport = lazy(() => import("./pages/Passport"));
 const OrderStatus = lazy(() => import("./pages/OrderStatus"));
 const Admin = lazy(() => import("./pages/admin/Admin"));
+const ProductDetail = lazy(() => import("./pages/ProductDetail"));
 const Loading = () => <main id="main" className="wrap" style={{ padding: "18vh 0" }} aria-busy="true" />;
 
 function Layout() {
@@ -68,6 +69,10 @@ export default function App() {
         />
         <Route element={<Layout />}>
           <Route index element={<Home />} />
+          <Route path="product/festive-statement-lehenga" element={<ProductDetail />} />
+          <Route path="product/mayuri-lehenga" element={<ProductDetail />} />
+          <Route path="pieces/mayuri" element={<ProductDetail />} />
+          <Route path="shop" element={<ProductDetail />} />
           <Route path="journal/:slug" element={<Article />} />
           <Route path="privacy" element={<Privacy />} />
           <Route path="fitcheck" element={<FitCheck />} />

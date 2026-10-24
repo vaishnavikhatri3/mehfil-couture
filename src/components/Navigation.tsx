@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, ArrowUpRight, Menu, X } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Menu, Sparkles, X } from "lucide-react";
 import { collections } from "../data/collections";
-import { occasions } from "../data/occasions";
 import { brand } from "../config/brand";
 import { generalEnquiry, enquiryChannel } from "../lib/enquiry";
 import { track } from "../lib/analytics";
@@ -13,7 +12,8 @@ import { Img } from "./Img";
 import { InstagramIcon } from "./Icons";
 import "./Navigation.css";
 
-const LEFT: { id: string; label: string; isTrousseau?: boolean }[] = [
+const LEFT: { id: string; label: string; isTrousseau?: boolean; to?: string }[] = [
+  { id: "hero-product", label: "Hero Piece · ₹25k", to: "/product/festive-statement-lehenga" },
   { id: "occasions", label: "Shop by Occasion" },
   { id: "trousseau", label: "Trousseau", isTrousseau: true },
   { id: "studio", label: "Style Studio" },
@@ -71,15 +71,16 @@ export function Navigation() {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setMobile(false);
       if (e.key === "Tab" && panel) {
-        const f = Array.from(panel.querySelectorAll<HTMLElement>("a,button"));
-        const first = f[0];
-        const lastEl = f[f.length - 1];
-        if (e.shiftKey && document.activeElement === first) {
+        const f = Array.from(panel.querySelectorAll<HTMLElement>("a,button")).filter(
+          (el) => el.offsetParent !== null,
+        );
+        if (!f.length) return;
+        if (e.shiftKey && document.activeElement === f[0]) {
           e.preventDefault();
-          lastEl.focus();
-        } else if (!e.shiftKey && document.activeElement === lastEl) {
+          f[f.length - 1].focus();
+        } else if (!e.shiftKey && document.activeElement === f[f.length - 1]) {
           e.preventDefault();
-          first.focus();
+          f[0].focus();
         }
       }
     };
@@ -91,25 +92,12 @@ export function Navigation() {
     };
   }, [mobile]);
 
-  useEffect(() => {
-    if (!mega) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setMega(false);
-        megaBtn.current?.focus();
-      }
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [mega]);
-
   const openMega = () => {
     window.clearTimeout(closeTimer.current);
     setMega(true);
   };
   const closeMegaSoon = () => {
-    window.clearTimeout(closeTimer.current);
-    closeTimer.current = window.setTimeout(() => setMega(false), 140);
+    closeTimer.current = window.setTimeout(() => setMega(false), 240);
   };
 
   const sectionClick = (id: string) => (e: React.MouseEvent) => {
@@ -137,7 +125,17 @@ export function Navigation() {
             </button>
           </div>
           {LEFT.map((l) =>
-            l.isTrousseau ? (
+            l.to ? (
+              <Link
+                key={l.id}
+                to={l.to}
+                className="nav__link nav__link--hero"
+                onClick={() => setMega(false)}
+              >
+                <Sparkles size={13} className="nav__hero-sparkle" />
+                <span>{l.label}</span>
+              </Link>
+            ) : l.isTrousseau ? (
               <button
                 key={l.id}
                 type="button"
@@ -183,15 +181,14 @@ export function Navigation() {
           </nav>
           <button type="button" className="nav__cta" onClick={() => generalEnquiry()}>
             <span>Enquire</span>
-            <span className="nav__cta-via">via {enquiryChannel()}</span>
           </button>
           <button
             ref={menuBtn}
             type="button"
             className="nav__burger"
+            aria-label={mobile ? "Close menu" : "Open menu"}
             aria-expanded={mobile}
             aria-controls="mobile-menu"
-            aria-label={mobile ? "Close menu" : "Open menu"}
             onClick={() => setMobile((m) => !m)}
           >
             {mobile ? <X size={22} strokeWidth={1.5} /> : <Menu size={22} strokeWidth={1.5} />}
@@ -238,37 +235,69 @@ export function Navigation() {
             ))}
           </div>
           <div className="mega__aside">
-            <span className="label">Shop by occasion</span>
-            <ul>
-              {occasions.map((o) => (
-                <li key={o.slug}>
-                  <a href="/#occasions" onClick={sectionClick("occasions")}>
-                    {o.role}
-                  </a>
-                </li>
-              ))}
-            </ul>
-            <a href="/#studio" className="link-arrow" onClick={sectionClick("studio")}>
-              Find your look <ArrowRight />
+            <span className="label">Atelier</span>
+            <p className="mega__aside-p">
+              Every piece begins with a conversation in our Indore studio. We shape silhouette, fabric and embroidery to the ceremony.
+            </p>
+            <div className="mega__aside-links">
+              <Link to="/product/festive-statement-lehenga" className="mega__aside-link" onClick={() => setMega(false)}>
+                Hero Piece: Festive Statement Lehenga (₹25k) <ArrowRight size={13} />
+              </Link>
+              <button
+                type="button"
+                className="mega__aside-link"
+                onClick={() => {
+                  setMega(false);
+                  openTrousseau();
+                }}
+              >
+                Plan your trousseau <ArrowRight size={13} />
+              </button>
+              <a href="/#studio" className="mega__aside-link" onClick={sectionClick("studio")}>
+                Explore the Style Studio <ArrowRight size={13} />
+              </a>
+              <button
+                type="button"
+                className="mega__aside-link"
+                onClick={() => {
+                  setMega(false);
+                  openPassport();
+                }}
+              >
+                Bespoke Measurement Passport <ArrowRight size={13} />
+              </button>
+            </div>
+            <a href={brand.instagram.url} target="_blank" rel="noopener noreferrer" className="mega__social">
+              <InstagramIcon size={14} />
+              <span>{brand.instagram.handle}</span>
+              <ArrowUpRight size={12} />
             </a>
           </div>
         </div>
       </div>
-
     </header>
 
-      {/* Mobile menu — outside <header> so header transforms/filters can't trap it */}
+    {/* Mobile drawer */}
+    {mobile && (
       <div
         id="mobile-menu"
-        className="mmenu"
-        data-open={mobile}
         ref={mobilePanel}
+        className="mmenu"
         role="dialog"
         aria-modal="true"
-        aria-label="Menu"
-        inert={!mobile}
+        aria-label="Site menu"
       >
         <nav className="mmenu__links" aria-label="Mobile">
+          <Link
+            to="/product/festive-statement-lehenga"
+            className="mmenu__passport-btn"
+            style={{ background: "var(--maroon)", color: "var(--paper)", borderColor: "var(--maroon)" }}
+            onClick={() => setMobile(false)}
+          >
+            <span className="mmenu__no">✨</span>
+            <span>Hero Piece · Festive Lehenga (₹25k)</span>
+          </Link>
+
           <button
             type="button"
             className="mmenu__passport-btn"
@@ -293,7 +322,7 @@ export function Navigation() {
             <span>Bespoke Measurement Passport</span>
           </button>
 
-          {[{ id: "collections", label: "Collections" }, ...LEFT.filter((l) => !l.isTrousseau), ...RIGHT.filter((r) => !r.isPassport), { id: "visit", label: "Visit the Studio" }].map((l, i) => (
+          {[{ id: "collections", label: "Collections" }, ...LEFT.filter((l) => !l.isTrousseau && !l.to), ...RIGHT.filter((r) => !r.isPassport), { id: "visit", label: "Visit the Studio" }].map((l, i) => (
             <a
               key={l.id}
               href={`/#${l.id}`}
@@ -318,16 +347,14 @@ export function Navigation() {
               generalEnquiry();
             }}
           >
-            Enquire via {enquiryChannel()} <ArrowUpRight />
+            Enquire via {enquiryChannel()} <ArrowRight size={14} />
           </button>
-          <div className="mmenu__meta">
-            <a href={brand.instagram.url} target="_blank" rel="noopener noreferrer" className="mmenu__ig">
-              <InstagramIcon size={16} /> {brand.instagram.handle}
-            </a>
-            <span className="label">{brand.studio.lines[1]}</span>
-          </div>
+          <p className="mmenu__meta">
+            {brand.studio.lines.join(" · ")}
+          </p>
         </div>
       </div>
+    )}
     </>
   );
 }
